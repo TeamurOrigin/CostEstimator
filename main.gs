@@ -1,7 +1,6 @@
 var ESTIMATES_SHEET_NAME = 'Сметы';
 var REF_SHEET_NAME = 'Справочник сметы';
 var ITEMS_SHEET_PREFIX = 'Смета';
-var ESTIMATES_STORE_KEY = 'estimates_store_v1';
 var ITEMS_STORE_PREFIX = 'estimate_items_v1_';
 
 function onOpen() {
@@ -14,10 +13,10 @@ function onOpen() {
 function openEstimateBuilder() {
   ensureCoreSheets_();
   var html = HtmlService.createHtmlOutputFromFile('EstimateModal')
-    .setTitle('Конструктор сметы')
+    .setTitle('Проекты')
     .setWidth(760)
-    .setHeight(720);
-  SpreadsheetApp.getUi().showModalDialog(html, 'Конструктор сметы');
+    .setHeight(700);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Проекты');
 }
 
 function openEstimateItems(id) {
@@ -30,11 +29,11 @@ function openEstimateItems(id) {
   template.estimateId = String(id);
 
   var html = template.evaluate()
-    .setTitle('Позиции сметы')
-    .setWidth(1100)
-    .setHeight(720);
+    .setTitle('Позиции проекта')
+    .setWidth(980)
+    .setHeight(700);
 
-  SpreadsheetApp.getUi().showModalDialog(html, 'Позиции сметы');
+  SpreadsheetApp.getUi().showModalDialog(html, 'Позиции проекта');
   return true;
 }
 
@@ -54,11 +53,11 @@ function createEstimate(payload) {
   ensureCoreSheets_();
   if (!payload) payload = {};
   var name = String(payload.name || '').trim();
-  var category = String(payload.category || '').trim();
   var type = String(payload.type || '').trim();
+  var group = String(payload.group || '').trim();
   if (!name) throw new Error('Название обязательно.');
-  if (!category) throw new Error('Категория обязательна.');
   if (!type) throw new Error('Тип обязателен.');
+  if (!group) throw new Error('Группа обязательна.');
 
   var id = makeId_();
   var now = new Date();
@@ -66,11 +65,10 @@ function createEstimate(payload) {
   var est = {
     id: id,
     name: name,
-    category: category,
     type: type,
+    group: group,
     createdAt: now.toISOString(),
-    itemsCount: 0,
-    totalSum: 0
+    itemsCount: 0
   };
 
   upsertEstimate_(est);
@@ -104,19 +102,14 @@ function getEstimateItemsBootstrap(id) {
   var ref = getRefData_();
   var items = readItems_(id);
 
-  var totalSum = 0;
-  for (var i = 0; i < items.length; i++) {
-    var s = Number(items[i].rowSum || 0);
-    if (isFinite(s)) totalSum += s;
-  }
-
   est.itemsCount = items.length;
-  est.totalSum = totalSum;
 
   return {
     estimate: est,
     items: items,
-    articlesByCategory: ref.articlesByCategory
+    categories: ref.categories,
+    positionsByCategory: ref.positionsByCategory,
+    positions: ref.positions
   };
 }
 
@@ -134,21 +127,16 @@ function saveEstimateItems(estimateId, items) {
   for (var i = 0; i < items.length; i++) {
     var it = items[i] || {};
     var row = normalizeItemRow_(it);
-    if (!row.article && row.qty === 0 && row.unitCost === 0) continue;
-    row.rowSum = calcRowSum_(row);
+    if (!row.category && !row.position && !row.comment) continue;
     norm.push(row);
   }
 
   writeItems_(estimateId, norm);
 
-  var totalSum = 0;
-  for (var j = 0; j < norm.length; j++) totalSum += Number(norm[j].rowSum || 0);
-
   est.itemsCount = norm.length;
-  est.totalSum = totalSum;
   upsertEstimate_(est);
 
-  return { itemsCount: est.itemsCount, totalSum: est.totalSum };
+  return { itemsCount: est.itemsCount };
 }
 
 function exportEstimateToSheet(estimateId) {
@@ -164,21 +152,16 @@ function exportEstimateToSheet(estimateId) {
 
   sheet.clear();
 
-  var headers = ['Статья','Кол-во','Залов','Дней','Дней мероприятий','Коэф.','Стоимость за ед.','Сумма'];
+  var headers = ['Категория','Позиция','Комментарий'];
   sheet.getRange(1,1,1,headers.length).setValues([headers]);
 
   var out = [];
   for (var i = 0; i < items.length; i++) {
     var r = items[i];
     out.push([
-      r.article || '',
-      r.qty || 0,
-      r.halls || 0,
-      r.days || 0,
-      r.eventDays || 0,
-      r.coef || 1,
-      r.unitCost || 0,
-      r.rowSum || 0
+      r.category || '',
+      r.position || '',
+      r.comment || ''
     ]);
   }
   if (out.length) sheet.getRange(2,1,out.length,headers.length).setValues(out);
@@ -198,13 +181,13 @@ function ensureCoreSheets_() {
   var estSheet = ss.getSheetByName(ESTIMATES_SHEET_NAME);
   if (!estSheet) {
     estSheet = ss.insertSheet(ESTIMATES_SHEET_NAME);
-    estSheet.getRange(1,1,1,6).setValues([['ID','Название','Категория','Тип','Статей','Сумма']]);
+    estSheet.getRange(1,1,1,5).setValues([['ID','Название','Тип','Группа','Позиции']]);
   }
 
   var refSheet = ss.getSheetByName(REF_SHEET_NAME);
   if (!refSheet) {
     refSheet = ss.insertSheet(REF_SHEET_NAME);
-    refSheet.getRange(1,1,1,4).setValues([['Категория','Тип','Статья','Цена']]);
+    refSheet.getRange(1,1,1,4).setValues([['Категория','Позиция','Цена','Тип']]);
   }
 }
 
@@ -213,7 +196,7 @@ function getRefData_() {
   var sh = ss.getSheetByName(REF_SHEET_NAME);
   var last = sh.getLastRow();
   if (last < 2) {
-    return { categories: [], types: [], articlesByCategory: {} };
+    return { categories: [], types: [], positionsByCategory: {}, positions: [] };
   }
 
   var vals = sh.getRange(2,1,last-1,4).getValues();
@@ -221,27 +204,30 @@ function getRefData_() {
   var cats = new Set();
   var types = new Set();
   var map = {};
+  var positions = new Set();
 
   for (var i = 0; i < vals.length; i++) {
     var c = String(vals[i][0] || '').trim();
-    var t = String(vals[i][1] || '').trim();
-    var a = String(vals[i][2] || '').trim();
+    var p = String(vals[i][1] || '').trim();
+    var t = String(vals[i][3] || '').trim();
     if (c) cats.add(c);
     if (t) types.add(t);
-    if (c && a) {
+    if (p) positions.add(p);
+    if (c && p) {
       if (!map[c]) map[c] = [];
-      map[c].push(a);
+      map[c].push(p);
     }
   }
 
   var categories = Array.from(cats);
   var typeList = Array.from(types);
+  var positionsList = Array.from(positions);
 
   for (var k in map) {
     map[k] = uniq_(map[k]);
   }
 
-  return { categories: categories, types: typeList, articlesByCategory: map };
+  return { categories: categories, types: typeList, positionsByCategory: map, positions: positionsList };
 }
 
 function listEstimates_() {
@@ -249,7 +235,7 @@ function listEstimates_() {
   var sh = ss.getSheetByName(ESTIMATES_SHEET_NAME);
   var last = sh.getLastRow();
   if (last < 2) return [];
-  var vals = sh.getRange(2,1,last-1,6).getValues();
+  var vals = sh.getRange(2,1,last-1,5).getValues();
   var out = [];
   for (var i = 0; i < vals.length; i++) {
     var id = String(vals[i][0] || '').trim();
@@ -257,10 +243,9 @@ function listEstimates_() {
     out.push({
       id: id,
       name: vals[i][1] || '',
-      category: vals[i][2] || '',
-      type: vals[i][3] || '',
-      itemsCount: Number(vals[i][4] || 0),
-      totalSum: Number(vals[i][5] || 0)
+      type: vals[i][2] || '',
+      group: vals[i][3] || '',
+      itemsCount: Number(vals[i][4] || 0)
     });
   }
   return out;
@@ -273,17 +258,16 @@ function findEstimateById_(id) {
   var sh = ss.getSheetByName(ESTIMATES_SHEET_NAME);
   var last = sh.getLastRow();
   if (last < 2) return null;
-  var vals = sh.getRange(2,1,last-1,6).getValues();
+  var vals = sh.getRange(2,1,last-1,5).getValues();
   for (var i = 0; i < vals.length; i++) {
     var rid = String(vals[i][0] || '').trim();
     if (rid === id) {
       return {
         id: rid,
         name: vals[i][1] || '',
-        category: vals[i][2] || '',
-        type: vals[i][3] || '',
-        itemsCount: Number(vals[i][4] || 0),
-        totalSum: Number(vals[i][5] || 0)
+        type: vals[i][2] || '',
+        group: vals[i][3] || '',
+        itemsCount: Number(vals[i][4] || 0)
       };
     }
   }
@@ -296,7 +280,7 @@ function upsertEstimate_(est) {
 
   var last = sh.getLastRow();
   if (last < 2) {
-    sh.appendRow([est.id, est.name, est.category, est.type, est.itemsCount || 0, est.totalSum || 0]);
+    sh.appendRow([est.id, est.name, est.type, est.group || '', est.itemsCount || 0]);
     return;
   }
 
@@ -304,19 +288,18 @@ function upsertEstimate_(est) {
   for (var i = 0; i < vals.length; i++) {
     var rid = String(vals[i][0] || '').trim();
     if (rid === est.id) {
-      sh.getRange(i+2,1,1,6).setValues([[
+      sh.getRange(i+2,1,1,5).setValues([[
         est.id,
         est.name,
-        est.category,
         est.type,
-        Number(est.itemsCount || 0),
-        Number(est.totalSum || 0)
+        est.group || '',
+        Number(est.itemsCount || 0)
       ]]);
       return;
     }
   }
 
-  sh.appendRow([est.id, est.name, est.category, est.type, Number(est.itemsCount||0), Number(est.totalSum||0)]);
+  sh.appendRow([est.id, est.name, est.type, est.group || '', Number(est.itemsCount||0)]);
 }
 
 function deleteEstimate_(id) {
@@ -345,7 +328,7 @@ function ensureItemsSheet_(id, estName) {
   var sh = ss.getSheetByName(name);
   if (!sh) {
     sh = ss.insertSheet(name);
-    sh.getRange(1,1,1,8).setValues([['Статья','Кол-во','Залов','Дней','Дней мероприятий','Коэф.','Стоимость за ед.','Сумма']]);
+    sh.getRange(1,1,1,3).setValues([['Категория','Позиция','Комментарий']]);
     sh.getRange(1,10).setValue('ID');
     sh.getRange(1,11).setValue(String(id));
     if (estName) sh.getRange(1,12).setValue(String(estName));
@@ -377,34 +360,11 @@ function deleteItems_(estimateId) {
 }
 
 function normalizeItemRow_(it) {
-  var qty = toNum_(it.qty, 0);
-  var halls = toNum_(it.halls, 1);
-  var days = toNum_(it.days, 1);
-  var eventDays = toNum_(it.eventDays, 1);
-  var coef = toNum_(it.coef, 1);
-  var unitCost = toNum_(it.unitCost, 0);
-
-  if ((qty > 0 || unitCost > 0)) {
-    if (halls === 0) halls = 1;
-    if (days === 0) days = 1;
-    if (eventDays === 0) eventDays = 1;
-    if (coef === 0) coef = 1;
-  }
-
   return {
-    article: String(it.article || '').trim(),
-    qty: qty,
-    halls: halls,
-    days: days,
-    eventDays: eventDays,
-    coef: coef,
-    unitCost: unitCost,
-    rowSum: 0
+    category: String(it.category || '').trim(),
+    position: String(it.position || '').trim(),
+    comment: String(it.comment || '').trim()
   };
-}
-
-function calcRowSum_(row) {
-  return toNum_(row.qty,0) * toNum_(row.halls,1) * toNum_(row.days,1) * toNum_(row.eventDays,1) * toNum_(row.coef,1) * toNum_(row.unitCost,0);
 }
 
 /* =========================

@@ -229,46 +229,44 @@
 <body>
   <div class="wrap">
     <div class="top">
-      <div class="title">Конструктор сметы</div>
+      <div class="title">Проекты</div>
       <div class="status" id="status">Загрузка…</div>
     </div>
 
     <div class="card" id="leftCard">
-      <div class="h">Сметы</div>
+      <div class="h">Проекты</div>
       <div class="b">
         <div class="formGrid">
           <div class="span2">
-            <label>Название</label>
-            <input id="newName" placeholder="Например: Видео / Трансляция">
-          </div>
-          <div>
-            <label>Категория</label>
-            <select id="newCategory"></select>
+            <label>Наименование проекта</label>
+            <input id="newName" placeholder="Например: Энергетики">
           </div>
           <div>
             <label>Тип</label>
             <select id="newType"></select>
           </div>
-          <button class="btn acc createBtn" id="btnCreate">Создать</button>
+          <div>
+            <label>Группа</label>
+            <input id="newGroup" placeholder="Например: Трансляция">
+          </div>
+          <button class="btn acc createBtn" id="btnCreate">Создать проект</button>
         </div>
 
         <div class="tableShell">
           <table>
             <colgroup>
-              <col style="width:36%">
+              <col style="width:34%">
+              <col style="width:18%">
               <col style="width:20%">
-              <col style="width:14%">
-              <col style="width:10%">
               <col style="width:10%">
               <col style="width:118px">
             </colgroup>
             <thead>
               <tr>
-                <th>Название</th>
-                <th>Категория</th>
+                <th>Проект</th>
                 <th>Тип</th>
-                <th class="center">Статей</th>
-                <th class="num">Сумма</th>
+                <th>Группа</th>
+                <th class="center">Позиции</th>
                 <th class="center">Действия</th>
               </tr>
             </thead>
@@ -284,17 +282,7 @@
   function $(id){return document.getElementById(id)}
   function setStatus(t){$('status').textContent=t}
   function arr(a){return a&&a.length?a:[]}
-  function money(n){var x=Number(n||0);return x.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})}
 
-  function fillCategories(){
-    var sel=$('newCategory'); sel.innerHTML='';
-    var cats=arr(boot&&boot.categories);
-    for(var i=0;i<cats.length;i++){
-      var o=document.createElement('option');
-      o.value=cats[i]; o.textContent=cats[i];
-      sel.appendChild(o);
-    }
-  }
   function fillTypes(){
     var sel=$('newType'); sel.innerHTML='';
     var types=arr(boot&&boot.types);
@@ -333,24 +321,20 @@
 
       var td2=document.createElement('td');
       td2.className='ellipsis';
-      td2.textContent=e.category||'';
-      td2.title=e.category||'';
+      td2.textContent=e.type||'';
+      td2.title=e.type||'';
 
       var td3=document.createElement('td');
       td3.className='ellipsis';
-      td3.textContent=e.type||'';
-      td3.title=e.type||'';
+      td3.textContent=e.group||'';
+      td3.title=e.group||'';
 
       var td4=document.createElement('td');
       td4.className='center';
       td4.textContent=String(Number(e.itemsCount||0));
 
       var td5=document.createElement('td');
-      td5.className='num';
-      td5.textContent=money(e.totalSum||0);
-
-      var td6=document.createElement('td');
-      td6.className='center';
+      td5.className='center';
 
       var box=document.createElement('div');
       box.className='estActions';
@@ -373,14 +357,13 @@
 
       box.appendChild(bOpen);
       box.appendChild(bDel);
-      td6.appendChild(box);
+      td5.appendChild(box);
 
       tr.appendChild(td1);
       tr.appendChild(td2);
       tr.appendChild(td3);
       tr.appendChild(td4);
       tr.appendChild(td5);
-      tr.appendChild(td6);
       body.appendChild(tr);
     }
   }
@@ -389,7 +372,6 @@
     google.script.run
       .withSuccessHandler(function(data){
         boot=data;
-        fillCategories();
         fillTypes();
         renderEstimates();
         if(cb)cb();
@@ -428,29 +410,29 @@
   function init(){
     $('btnCreate').addEventListener('click',function(){
       var name=$('newName').value.trim();
-      var category=$('newCategory').value.trim();
       var type=$('newType').value.trim();
+      var group=$('newGroup').value.trim();
       if(!name){setStatus('Укажите название');return}
-      if(!category){setStatus('Укажите категорию');return}
       if(!type){setStatus('Укажите тип');return}
+      if(!group){setStatus('Укажите группу');return}
       setStatus('Создание…');
       google.script.run
         .withSuccessHandler(function(est){
           $('newName').value='';
+          $('newGroup').value='';
           setStatus('Готово');
           refreshBootstrap(function(){ openEstimate(est.id); });
         })
         .withFailureHandler(function(e){
           setStatus(String(e&&e.message?e.message:e));
         })
-        .createEstimate({name:name,category:category,type:type});
+        .createEstimate({name:name,type:type,group:group});
     });
 
     setStatus('Загрузка…');
     google.script.run
       .withSuccessHandler(function(data){
         boot=data;
-        fillCategories();
         fillTypes();
         renderEstimates();
         setStatus('Готово');
