@@ -22,7 +22,7 @@ function openEstimateBuilder() {
 function getBootstrapData() {
   ensureCoreSheets_();
   var a = readRef_();
-  return { categories: a.categories, articlesByCategory: a.articlesByCategory, estimates: listEstimates_() };
+  return { categories: a.categories, articlesByCategory: a.articlesByCategory, types: a.types, estimates: listEstimates_() };
 }
 
 function createEstimate(payload) {
@@ -33,8 +33,10 @@ function createEstimate(payload) {
 
     var name = String(payload && payload.name ? payload.name : '').trim();
     var category = String(payload && payload.category ? payload.category : '').trim();
+    var type = String(payload && payload.type ? payload.type : '').trim();
     if (!name) throw new Error('Укажите название.');
     if (!category) throw new Error('Укажите категорию.');
+    if (!type) throw new Error('Укажите тип.');
 
     var list = loadEstimates_();
     for (var i = 0; i < list.length; i++) {
@@ -44,7 +46,7 @@ function createEstimate(payload) {
     }
 
     var id = Utilities.getUuid();
-    var est = { id: id, name: name, category: category, itemsCount: 0, totalSum: 0, sheetName: '', updatedAt: new Date().toISOString() };
+    var est = { id: id, name: name, category: category, type: type, itemsCount: 0, totalSum: 0, sheetName: '', updatedAt: new Date().toISOString() };
     list.push(est);
     saveEstimates_(list);
     return est;
@@ -198,6 +200,7 @@ function ensureCoreSheets_() {
   if (!ss.getSheetByName(REF_SHEET_NAME)) {
     var ref = ss.insertSheet(REF_SHEET_NAME);
     ref.getRange('A1:B1').setValues([['Категория', 'Статья']]);
+    ref.getRange('E1').setValue('Тип');
     ref.setFrozenRows(1);
     ref.autoResizeColumns(1, 2);
   }
@@ -206,13 +209,14 @@ function ensureCoreSheets_() {
 function readRef_() {
   var ss = SpreadsheetApp.getActive();
   var sh = ss.getSheetByName(REF_SHEET_NAME);
-  if (!sh) return { categories: [], articlesByCategory: {} };
+  if (!sh) return { categories: [], articlesByCategory: {}, types: [] };
 
   var last = sh.getLastRow();
-  if (last < 2) return { categories: [], articlesByCategory: {} };
+  if (last < 2) return { categories: [], articlesByCategory: {}, types: [] };
 
   var cats = sh.getRange(2, 1, last - 1, 1).getValues();
   var arts = sh.getRange(2, 2, last - 1, 1).getValues();
+  var typesRange = sh.getRange(2, 5, last - 1, 1).getValues();
 
   var map = {};
   for (var i = 0; i < cats.length; i++) {
@@ -239,7 +243,17 @@ function readRef_() {
     map[key] = uniq;
   }
 
-  return { categories: categories, articlesByCategory: map };
+  var typesSeen = {};
+  var types = [];
+  for (var t = 0; t < typesRange.length; t++) {
+    var typeVal = String(typesRange[t][0] || '').trim();
+    if (!typeVal || typesSeen[typeVal]) continue;
+    typesSeen[typeVal] = true;
+    types.push(typeVal);
+  }
+  types.sort(function(x, y) { return x.localeCompare(y, 'ru'); });
+
+  return { categories: categories, articlesByCategory: map, types: types };
 }
 
 function listEstimates_() {
@@ -383,6 +397,7 @@ function loadLegacyEstimatesFromSheet_() {
     var itemsCount = toNumber_(cellAt_(row, map.itemsCount), 0);
     var totalSum = toNumber_(cellAt_(row, map.totalSum), 0);
     var sheetName = String(cellAt_(row, map.sheetName) || '').trim();
+    var type = String(cellAt_(row, map.type) || '').trim();
 
     var updatedAtRaw = cellAt_(row, map.updatedAt);
     var updatedAt = '';
@@ -397,6 +412,7 @@ function loadLegacyEstimatesFromSheet_() {
       id: id,
       name: name,
       category: category,
+      type: type,
       itemsCount: itemsCount,
       totalSum: totalSum,
       sheetName: sheetName,
@@ -414,6 +430,7 @@ function inferLegacyEstimatesMap_(headers, values) {
     itemsCount: findHeaderIndex_(headers, ['статей', 'позиц', 'кол-во', 'количество', 'items']),
     totalSum: findHeaderIndex_(headers, ['сумма', 'итого', 'total']),
     sheetName: findHeaderIndex_(headers, ['лист', 'sheet']),
+    type: findHeaderIndex_(headers, ['тип']),
     updatedAt: findHeaderIndex_(headers, ['обнов', 'дата', 'updated'])
   };
 
@@ -433,6 +450,7 @@ function inferLegacyEstimatesMap_(headers, values) {
       itemsCount: 2,
       totalSum: 3,
       sheetName: 4,
+      type: -1,
       updatedAt: 5
     };
   }
@@ -449,6 +467,7 @@ function inferLegacyEstimatesMap_(headers, values) {
     itemsCount: idx.itemsCount,
     totalSum: idx.totalSum,
     sheetName: idx.sheetName,
+    type: idx.type,
     updatedAt: idx.updatedAt
   };
 }
