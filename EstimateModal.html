@@ -5,275 +5,161 @@
   <meta charset="UTF-8">
   <style>
     :root{
-      --bg:#070d18;
-      --panel:rgba(15,23,42,.72);
-      --panel2:rgba(2,6,23,.42);
-      --text:#e7eefc;
-      --muted:#95a6c7;
-      --border:rgba(148,163,184,.16);
-      --border2:rgba(148,163,184,.10);
-      --accent:#38bdf8;
-      --green:#34d399;
-      --red:#ef4444;
-      --shadow:0 18px 70px rgba(0,0,0,.55);
-      --shadow2:0 10px 28px rgba(0,0,0,.35);
-      --r:16px;
-      --r2:12px;
+      --bg:#ffffff;
+      --text:#111827;
+      --muted:#4b5563;
+      --border:#000000;
+      --header:#3b3b3b;
+      --headerText:#ffffff;
+      --accent:#3cc4c8;
+      --accentDark:#2aa7ab;
+      --danger:#e63b3b;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0;
-      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      font-size:11.5px;
-      line-height:1.2;
+      font-family:Arial,Helvetica,sans-serif;
+      font-size:12px;
       color:var(--text);
-      background:
-        radial-gradient(900px 420px at 12% -10%, rgba(56,189,248,.16), transparent 55%),
-        radial-gradient(900px 420px at 88% 0%, rgba(52,211,153,.13), transparent 55%),
-        radial-gradient(900px 520px at 50% 110%, rgba(99,102,241,.10), transparent 55%),
-        linear-gradient(180deg, #060b16 0%, #040816 100%);
-      overflow:hidden;
+      background:var(--bg);
     }
-
     .wrap{
       height:100%;
-      padding:12px;
+      padding:10px;
       display:flex;
       flex-direction:column;
-      gap:10px;
+      gap:8px;
+      border:2px solid var(--border);
     }
-
-    .top{
-      flex:0 0 auto;
-      display:flex;align-items:center;justify-content:space-between;
-      padding:10px 12px;
-      border:1px solid var(--border);
-      border-radius:var(--r);
-      background:linear-gradient(180deg, rgba(15,23,42,.82), rgba(15,23,42,.62));
-      box-shadow:var(--shadow);
-      position:relative;
-      overflow:hidden;
-    }
-    .top:before{
-      content:"";
-      position:absolute;inset:-2px;
-      background:
-        radial-gradient(600px 140px at 18% 0%, rgba(56,189,248,.18), transparent 60%),
-        radial-gradient(600px 160px at 86% 0%, rgba(52,211,153,.14), transparent 60%);
-      pointer-events:none;
-      opacity:.9;
-    }
-    .top > *{position:relative;z-index:1}
-    .title{font-weight:950;font-size:14px;letter-spacing:.2px}
-    .status{
-      font-size:10.8px;color:var(--muted);
-      padding:5px 9px;
-      border:1px solid var(--border2);
-      border-radius:999px;
-      background:rgba(2,6,23,.40);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
-      white-space:nowrap;
-    }
-
-    .card{
-      flex:1 1 auto;
-      min-height:0;
-      border:1px solid var(--border);
-      border-radius:var(--r);
-      background:linear-gradient(180deg, rgba(15,23,42,.76), rgba(2,6,23,.44));
-      box-shadow:var(--shadow2);
-      overflow:hidden;
-      position:relative;
+    .topBar{
       display:flex;
-      flex-direction:column;
+      gap:6px;
     }
-    .card:before{
-      content:"";
-      position:absolute;inset:0;
-      background:
-        radial-gradient(800px 220px at 22% 0%, rgba(56,189,248,.10), transparent 55%),
-        radial-gradient(800px 220px at 82% 0%, rgba(52,211,153,.08), transparent 55%);
-      pointer-events:none;
-      opacity:.9;
-    }
-    .card > *{position:relative;z-index:1}
-
-    .h{
-      flex:0 0 auto;
-      padding:10px 12px;
-      border-bottom:1px solid var(--border2);
-      font-weight:950;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      background:linear-gradient(180deg, rgba(2,6,23,.32), rgba(2,6,23,.12));
-    }
-    .b{
-      flex:1 1 auto;
-      min-height:0;
-      padding:10px 12px;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-    }
-
-    label{display:block;font-size:10.8px;color:var(--muted);margin:0 0 6px}
-    input,select{
-      width:100%;
-      height:32px;
-      padding:7px 10px;
-      border-radius:12px;
-      border:1px solid var(--border2);
-      background:rgba(2,6,23,.44);
-      color:var(--text);
-      outline:none;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
-      transition:box-shadow .12s ease,border-color .12s ease,transform .12s ease,background .12s ease;
-    }
-    input::placeholder{color:rgba(149,166,199,.55)}
-    input:focus,select:focus{
-      border-color:rgba(56,189,248,.55);
-      box-shadow:0 0 0 3px rgba(56,189,248,.12), inset 0 1px 0 rgba(255,255,255,.04);
-      background:rgba(2,6,23,.50);
-    }
-
-    .btn{
-      height:32px;
-      padding:0 12px;
-      border-radius:12px;
-      border:1px solid var(--border2);
-      background:linear-gradient(180deg, rgba(2,6,23,.55), rgba(2,6,23,.35));
-      color:var(--text);
-      font-weight:950;
+    .topBar .tab{
+      background:var(--accent);
+      color:#fff;
+      font-weight:700;
+      border:none;
+      padding:4px 12px;
+      height:22px;
       cursor:pointer;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
-      transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease,filter .12s ease;
-      white-space:nowrap;
     }
-    .btn:hover{transform:translateY(-1px);filter:brightness(1.06)}
-    .btn:active{transform:translateY(0)}
-    .btn.acc{
-      border-color:rgba(56,189,248,.45);
-      box-shadow:0 0 0 3px rgba(56,189,248,.08), inset 0 1px 0 rgba(255,255,255,.05);
+    .topBar .tab:active{transform:translateY(1px)}
+    .sectionTitle{
+      background:var(--header);
+      color:var(--headerText);
+      font-weight:700;
+      padding:3px 8px;
+      width:120px;
     }
-    .btn.red{
-      border-color:rgba(239,68,68,.45);
-      box-shadow:0 0 0 3px rgba(239,68,68,.08), inset 0 1px 0 rgba(255,255,255,.05);
-    }
-    .xbtn{
-      height:28px;
-      border-radius:11px;
-      font-weight:950;
-      padding:0 10px;
-      font-size:11px;
-    }
-
-    .formGrid{
+    .formRow{
       display:grid;
-      grid-template-columns:1fr 1fr;
+      grid-template-columns:220px 170px 170px 120px;
       gap:8px;
       align-items:end;
+      margin-top:6px;
     }
-    .span2{grid-column:1 / -1}
-    .createBtn{grid-column:1 / -1}
-
-    .tableShell{
-      flex:1 1 auto;
-      min-height:0;
-      border:1px solid var(--border2);
-      border-radius:14px;
-      overflow:auto;
-      background:rgba(2,6,23,.22);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+    label{display:block;font-size:11px;color:var(--muted);margin-bottom:3px}
+    input,select{
+      width:100%;
+      height:24px;
+      border:2px solid var(--border);
+      padding:2px 6px;
+      font-size:12px;
     }
-
+    .btn{
+      background:var(--accent);
+      color:#fff;
+      border:none;
+      height:24px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .btn:active{transform:translateY(1px)}
+    .status{
+      font-size:11px;
+      color:var(--muted);
+      margin-left:auto;
+      align-self:center;
+    }
+    .tableWrap{
+      margin-top:8px;
+      border:2px solid var(--border);
+    }
     table{
       width:100%;
-      border-collapse:separate;
-      border-spacing:0;
-      font-size:11.1px;
+      border-collapse:collapse;
       table-layout:fixed;
     }
-    th,td{padding:7px 8px;border-bottom:1px solid rgba(148,163,184,.09);vertical-align:middle}
-    th{
-      color:rgba(149,166,199,.85);
-      font-weight:950;
-      text-align:left;
-      background:rgba(2,6,23,.28);
-      position:sticky;top:0;z-index:2;
-      box-shadow:inset 0 -1px 0 rgba(148,163,184,.08);
-      white-space:nowrap;
+    th,td{
+      border:2px solid var(--border);
+      padding:4px 6px;
+      text-align:center;
     }
-    tbody tr:hover td{background:rgba(56,189,248,.05)}
-    td.num{text-align:right}
-    td.center{text-align:center}
-    .ellipsis{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
-    .estActions{
+    th{
+      background:var(--header);
+      color:var(--headerText);
+      font-weight:700;
+    }
+    td.left{text-align:left}
+    .actions{
       display:flex;
       flex-direction:column;
-      gap:6px;
-      align-items:stretch;
+      gap:4px;
     }
-    .estActions .btn{width:100%}
-
-    @media (max-width: 640px){
-      .wrap{padding:10px}
-      .formGrid{grid-template-columns:1fr}
-      .title{font-size:13px}
-    }
+    .actions .btn{height:22px}
+    .btn.danger{background:var(--danger)}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="top">
-      <div class="title">Проекты</div>
+    <div class="topBar">
+      <button class="tab">Новый проект</button>
+      <button class="tab">Сохранить</button>
+      <button class="tab">Импорт</button>
+      <button class="tab">Экспорт</button>
       <div class="status" id="status">Загрузка…</div>
     </div>
 
-    <div class="card" id="leftCard">
-      <div class="h">Проекты</div>
-      <div class="b">
-        <div class="formGrid">
-          <div class="span2">
-            <label>Наименование проекта</label>
-            <input id="newName" placeholder="Например: Энергетики">
-          </div>
-          <div>
-            <label>Тип</label>
-            <select id="newType"></select>
-          </div>
-          <div>
-            <label>Группа</label>
-            <input id="newGroup" placeholder="Например: Трансляция">
-          </div>
-          <button class="btn acc createBtn" id="btnCreate">Создать проект</button>
-        </div>
+    <div class="sectionTitle">Проекты</div>
 
-        <div class="tableShell">
-          <table>
-            <colgroup>
-              <col style="width:34%">
-              <col style="width:18%">
-              <col style="width:20%">
-              <col style="width:10%">
-              <col style="width:118px">
-            </colgroup>
-            <thead>
-              <tr>
-                <th>Проект</th>
-                <th>Тип</th>
-                <th>Группа</th>
-                <th class="center">Позиции</th>
-                <th class="center">Действия</th>
-              </tr>
-            </thead>
-            <tbody id="estBody"></tbody>
-          </table>
-        </div>
+    <div class="formRow">
+      <div>
+        <label>Наименование проекта</label>
+        <input id="newName" placeholder="Например: Энергетики">
       </div>
+      <div>
+        <label>Тип</label>
+        <select id="newType"></select>
+      </div>
+      <div>
+        <label>Группа</label>
+        <input id="newGroup" placeholder="Например: Трансляция">
+      </div>
+      <button class="btn" id="btnCreate">Создать</button>
+    </div>
+
+    <div class="tableWrap">
+      <table>
+        <colgroup>
+          <col style="width:35%">
+          <col style="width:18%">
+          <col style="width:20%">
+          <col style="width:12%">
+          <col style="width:15%">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Наименование проекта</th>
+            <th>Тип</th>
+            <th>Группа</th>
+            <th>Кол-во позиций</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody id="estBody"></tbody>
+      </table>
     </div>
   </div>
 
@@ -300,11 +186,10 @@
     if(!list.length){
       var tr=document.createElement('tr');
       var td=document.createElement('td');
-      td.colSpan=6;
-      td.style.padding='12px 10px';
-      td.style.color='rgba(149,166,199,.85)';
-      td.style.fontSize='11px';
-      td.textContent='Смет пока нет';
+      td.colSpan=5;
+      td.style.padding='8px 6px';
+      td.style.color='var(--muted)';
+      td.textContent='Проектов пока нет';
       tr.appendChild(td);
       body.appendChild(tr);
       return;
@@ -315,40 +200,32 @@
       var tr=document.createElement('tr');
 
       var td1=document.createElement('td');
-      td1.className='ellipsis';
+      td1.className='left';
       td1.textContent=e.name||'';
-      td1.title=e.name||'';
 
       var td2=document.createElement('td');
-      td2.className='ellipsis';
       td2.textContent=e.type||'';
-      td2.title=e.type||'';
 
       var td3=document.createElement('td');
-      td3.className='ellipsis';
       td3.textContent=e.group||'';
-      td3.title=e.group||'';
 
       var td4=document.createElement('td');
-      td4.className='center';
       td4.textContent=String(Number(e.itemsCount||0));
 
       var td5=document.createElement('td');
-      td5.className='center';
-
       var box=document.createElement('div');
-      box.className='estActions';
+      box.className='actions';
 
       var bOpen=document.createElement('button');
-      bOpen.className='btn acc xbtn';
-      bOpen.textContent='Открыть';
+      bOpen.className='btn';
+      bOpen.textContent='Редактировать';
       bOpen.dataset.id=e.id;
       bOpen.addEventListener('click',function(ev){
         openEstimate(ev.currentTarget.dataset.id);
       });
 
       var bDel=document.createElement('button');
-      bDel.className='btn red xbtn';
+      bDel.className='btn danger';
       bDel.textContent='Удалить';
       bDel.dataset.id=e.id;
       bDel.addEventListener('click',function(ev){
@@ -383,7 +260,7 @@
   }
 
   function openEstimate(id){
-    setStatus('Открываю смету…');
+    setStatus('Открываю проект…');
     google.script.run
       .withSuccessHandler(function(){
         google.script.host.close();
