@@ -26,6 +26,11 @@
     .btn.red{border-color:rgba(239,68,68,.45);box-shadow:0 0 0 3px rgba(239,68,68,.10)}
     .xbtn{padding:7px 10px;border-radius:10px;font-weight:900}
     table{width:100%;border-collapse:collapse;font-size:12.5px}
+    table.items th,table.items td{padding:6px 6px}
+    .col-article{min-width:200px}
+    .col-qty,.col-halls,.col-days,.col-event-days,.col-coef,.col-unit{min-width:70px}
+    .col-sum{min-width:90px}
+    table.items input{padding:8px 8px}
     th,td{padding:8px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
     th{color:var(--muted);font-weight:900;text-align:left;background:rgba(2,6,23,.18)}
     .pill{font-size:12px;color:var(--muted);padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:rgba(2,6,23,.25)}
@@ -101,18 +106,18 @@
           <div style="height:10px"></div>
 
           <div class="itemsWrap">
-            <table>
+            <table class="items">
               <thead>
                 <tr>
-                  <th style="min-width:240px">Статья</th>
-                  <th style="min-width:90px">Кол-во</th>
-                  <th style="min-width:90px">Залов</th>
-                  <th style="min-width:90px">Дней</th>
-                  <th style="min-width:140px">Дней мероприятий</th>
-                  <th style="min-width:90px">Коэф.</th>
-                  <th style="min-width:150px">Стоимость за ед.</th>
-                  <th style="min-width:120px">Сумма</th>
-                  <th style="min-width:70px"></th>
+                  <th class="col-article">Статья</th>
+                  <th class="col-qty">Кол-во</th>
+                  <th class="col-halls">Залов</th>
+                  <th class="col-days">Дней</th>
+                  <th class="col-event-days">Дней мероприятий</th>
+                  <th class="col-coef">Коэф.</th>
+                  <th class="col-unit">Стоимость за ед.</th>
+                  <th class="col-sum">Сумма</th>
+                  <th style="min-width:60px"></th>
                 </tr>
               </thead>
               <tbody id="itemsBody"></tbody>
