@@ -14,9 +14,23 @@ function openEstimateBuilder() {
   ensureCoreSheets_();
   var html = HtmlService.createHtmlOutputFromFile('EstimateModal')
     .setTitle('Конструктор сметы')
-    .setWidth(1150)
+    .setWidth(760)
     .setHeight(720);
   SpreadsheetApp.getUi().showModalDialog(html, 'Конструктор сметы');
+}
+
+function openEstimateItems(id) {
+  ensureCoreSheets_();
+  var est = findEstimateById_(id);
+  if (!est) throw new Error('Смета не найдена.');
+  var template = HtmlService.createTemplateFromFile('EstimateItemsModal');
+  template.estimateId = id;
+  var html = template.evaluate()
+    .setTitle('Позиции сметы')
+    .setWidth(1100)
+    .setHeight(720);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Позиции сметы');
+  return true;
 }
 
 function getBootstrapData() {
@@ -88,6 +102,14 @@ function getEstimateItems(id) {
   var est = findEstimateById_(id);
   if (!est) throw new Error('Смета не найдена.');
   return { estimate: est, items: loadItems_(id) };
+}
+
+function getEstimateItemsBootstrap(id) {
+  ensureCoreSheets_();
+  var est = findEstimateById_(id);
+  if (!est) throw new Error('Смета не найдена.');
+  var ref = readRef_();
+  return { estimate: est, items: loadItems_(id), articlesByCategory: ref.articlesByCategory };
 }
 
 function saveEstimateItems(id, items) {

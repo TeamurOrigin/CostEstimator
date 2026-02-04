@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <style>
+    :root{
+      --bg:#070d18;
+      --panel:rgba(15,23,42,.72);
+      --panel2:rgba(2,6,23,.42);
+      --text:#e7eefc;
+      --muted:#95a6c7;
+      --border:rgba(148,163,184,.16);
+      --border2:rgba(148,163,184,.10);
+      --accent:#38bdf8;
+      --green:#34d399;
+      --red:#ef4444;
+      --shadow:0 18px 70px rgba(0,0,0,.55);
+      --shadow2:0 10px 28px rgba(0,0,0,.35);
+      --r:16px;
+      --r2:12px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      font-size:12px;
+      line-height:1.25;
+      color:var(--text);
+      background:
+        radial-gradient(900px 420px at 12% -10%, rgba(56,189,248,.16), transparent 55%),
+        radial-gradient(900px 420px at 88% 0%, rgba(52,211,153,.13), transparent 55%),
+        radial-gradient(900px 520px at 50% 110%, rgba(99,102,241,.10), transparent 55%),
+        linear-gradient(180deg, #060b16 0%, #040816 100%);
+    }
+    .wrap{padding:14px}
+    .top{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:12px 14px;
+      border:1px solid var(--border);
+      border-radius:var(--r);
+      background:linear-gradient(180deg, rgba(15,23,42,.82), rgba(15,23,42,.62));
+      box-shadow:var(--shadow);
+      margin-bottom:12px;
+      position:relative;
+      overflow:hidden;
+    }
+    .top:before{
+      content:"";
+      position:absolute;inset:-2px;
+      background:radial-gradient(600px 140px at 18% 0%, rgba(56,189,248,.18), transparent 60%),
+                 radial-gradient(600px 160px at 86% 0%, rgba(52,211,153,.14), transparent 60%);
+      pointer-events:none;
+      opacity:.9;
+    }
+    .top > *{position:relative;z-index:1}
+    .title{font-weight:950;font-size:15px;letter-spacing:.2px}
+    .status{
+      font-size:11px;color:var(--muted);
+      padding:6px 10px;
+      border:1px solid var(--border2);
+      border-radius:999px;
+      background:rgba(2,6,23,.40);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+      white-space:nowrap;
+    }
+
+    .card{
+      border:1px solid var(--border);
+      border-radius:var(--r);
+      background:linear-gradient(180deg, rgba(15,23,42,.76), rgba(2,6,23,.44));
+      box-shadow:var(--shadow2);
+      overflow:hidden;
+      position:relative;
+    }
+    .card:before{
+      content:"";
+      position:absolute;inset:0;
+      background:
+        radial-gradient(800px 220px at 22% 0%, rgba(56,189,248,.10), transparent 55%),
+        radial-gradient(800px 220px at 82% 0%, rgba(52,211,153,.08), transparent 55%);
+      pointer-events:none;
+      opacity:.9;
+    }
+    .card > *{position:relative;z-index:1}
+
+    .h{
+      padding:12px 14px;
+      border-bottom:1px solid var(--border2);
+      font-weight:950;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background:linear-gradient(180deg, rgba(2,6,23,.32), rgba(2,6,23,.12));
+    }
+    .b{padding:12px 14px}
+
+    .tools{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+    .pill{
+      font-size:11px;color:var(--muted);
+      padding:6px 10px;
+      border:1px solid var(--border2);
+      border-radius:999px;
+      background:rgba(2,6,23,.35);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+      white-space:nowrap;
+    }
+
+    .btn{
+      height:34px;
+      padding:0 12px;
+      border-radius:12px;
+      border:1px solid var(--border2);
+      background:linear-gradient(180deg, rgba(2,6,23,.55), rgba(2,6,23,.35));
+      color:var(--text);
+      font-weight:950;
+      cursor:pointer;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+      transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease,filter .12s ease;
+      white-space:nowrap;
+    }
+    .btn:hover{transform:translateY(-1px);filter:brightness(1.06)}
+    .btn:active{transform:translateY(0)}
+    .btn.acc{
+      border-color:rgba(56,189,248,.45);
+      box-shadow:0 0 0 3px rgba(56,189,248,.08), inset 0 1px 0 rgba(255,255,255,.05);
+    }
+    .btn.green{
+      border-color:rgba(52,211,153,.45);
+      box-shadow:0 0 0 3px rgba(52,211,153,.08), inset 0 1px 0 rgba(255,255,255,.05);
+    }
+    .btn.red{
+      border-color:rgba(239,68,68,.45);
+      box-shadow:0 0 0 3px rgba(239,68,68,.08), inset 0 1px 0 rgba(255,255,255,.05);
+    }
+    .xbtn{height:30px;border-radius:11px;font-weight:950;padding:0 10px}
+
+    .itemsWrap{
+      border:1px solid var(--border2);
+      border-radius:14px;
+      overflow:auto;
+      max-height:420px;
+      background:rgba(2,6,23,.18);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+    }
+
+    table{width:100%;border-collapse:separate;border-spacing:0;font-size:11.25px}
+    th,td{padding:8px 8px;border-bottom:1px solid rgba(148,163,184,.09);vertical-align:middle}
+    th{
+      color:rgba(149,166,199,.85);
+      font-weight:950;
+      text-align:left;
+      background:rgba(2,6,23,.28);
+      position:sticky;top:0;z-index:2;
+      box-shadow:inset 0 -1px 0 rgba(148,163,184,.08);
+    }
+
+    table.items{table-layout:fixed}
+    table.items th,table.items td{
+      padding:6px 6px;
+      text-align:center;
+      white-space:nowrap;
+    }
+    table.items th{
+      font-size:10.4px;
+      line-height:1.05;
+      letter-spacing:.1px;
+    }
+    table.items input{
+      height:28px;
+      padding:4px 8px;
+      font-size:11px;
+      border-radius:999px;
+      text-align:center;
+      border:1px solid rgba(148,163,184,.10);
+      background:rgba(2,6,23,.46);
+      color:var(--text);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+    }
+    table.items td:first-child input{
+      border-radius:12px;
+      text-align:left;
+      padding:4px 10px;
+    }
+    table.items td:first-child{padding-left:10px}
+    table.items th:first-child{padding-left:10px}
+    table.items td:last-child{padding-right:10px}
+    table.items th:last-child{padding-right:10px}
+
+    .col-article{width:190px;min-width:190px;max-width:190px}
+    .col-num{width:58px;min-width:58px;max-width:58px}
+    .col-sum{width:90px;min-width:90px;max-width:90px}
+    .col-x{width:50px;min-width:50px;max-width:50px}
+
+    .sum{
+      margin-top:10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:10px 12px;
+      border:1px solid var(--border2);
+      border-radius:14px;
+      background:linear-gradient(180deg, rgba(2,6,23,.34), rgba(2,6,23,.22));
+      font-weight:950;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+    }
+    .sum .m{font-weight:950;color:rgba(149,166,199,.85);font-size:11px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="title">Позиции сметы</div>
+      <div class="status" id="status">Загрузка…</div>
+    </div>
+
+    <div class="card" id="itemsCard">
+      <div class="h">
+        <div>
+          <div id="curTitle">Позиции</div>
+          <div style="color:rgba(149,166,199,.85);font-size:11px;margin-top:2px" id="curSub">Загрузка данных…</div>
+        </div>
+        <div class="tools">
+          <span class="pill" id="curMeta">—</span>
+          <button class="btn" id="btnBack">К сметам</button>
+          <button class="btn" id="btnOpenSheet">Выгрузить на лист</button>
+        </div>
+      </div>
+
+      <div class="b">
+        <datalist id="articleOptions"></datalist>
+
+        <div class="tools" style="justify-content:space-between;margin-bottom:10px">
+          <button class="btn green" id="btnAddRow">Добавить позицию</button>
+          <button class="btn acc" id="btnSave">Сохранить</button>
+        </div>
+
+        <div class="itemsWrap">
+          <table class="items">
+            <thead>
+              <tr>
+                <th class="col-article" style="text-align:left">Статья</th>
+                <th class="col-num">Кол-во</th>
+                <th class="col-num">Залов</th>
+                <th class="col-num">Дней</th>
+                <th class="col-num">Дней<br>мер.</th>
+                <th class="col-num">Коэф.</th>
+                <th class="col-num">Цена<br>ед.</th>
+                <th class="col-sum">Сумма</th>
+                <th class="col-x"></th>
+              </tr>
+            </thead>
+            <tbody id="itemsBody"></tbody>
+          </table>
+        </div>
+
+        <div class="sum">
+          <div class="m">Итого</div>
+          <div id="totalSum">0.00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  var estimateId = <?= JSON.stringify(estimateId) ?>;
+  var current=null,items=[],articlesByCategory={};
+  function $(id){return document.getElementById(id)}
+  function setStatus(t){$('status').textContent=t}
+  function arr(a){return a&&a.length?a:[]}
+  function money(n){var x=Number(n||0);return x.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})}
+  function num(v,def){if(def===undefined)def=0;if(v===null||v===undefined||v==='')return def;var x=Number(String(v).replace(',','.'));return isFinite(x)?x:def}
+  function blankRow(){return{article:'',qty:1,halls:1,days:1,eventDays:1,coef:1,unitCost:0,rowSum:0}}
+
+  function setRightHeader(est){
+    if(!est){
+      $('curTitle').textContent='Позиции';
+      $('curSub').textContent='Смета не найдена';
+      $('curMeta').textContent='—';
+      return;
+    }
+    var meta='Категория: '+(est.category||'');
+    if(est.type)meta+=' • Тип: '+est.type;
+    $('curTitle').textContent=est.name||'';
+    $('curSub').textContent=meta;
+    $('curMeta').textContent='Статей: '+String(est.itemsCount||0)+' • Сумма: '+money(est.totalSum||0);
+  }
+  function buildArticleDatalist(category){
+    var dl=$('articleOptions');dl.innerHTML='';
+    var list=arr(articlesByCategory&&articlesByCategory[category]);
+    for(var i=0;i<list.length;i++){var o=document.createElement('option');o.value=list[i];dl.appendChild(o)}
+  }
+  function recalc(){
+    var total=0;
+    for(var i=0;i<items.length;i++){
+      var it=items[i];
+      var rowSum=num(it.qty,0)*num(it.halls,0)*num(it.days,0)*num(it.eventDays,0)*num(it.coef,1)*num(it.unitCost,0);
+      it.rowSum=rowSum;
+      total+=rowSum;
+    }
+    $('totalSum').textContent=money(total);
+  }
+  function renderItems(){
+    var body=$('itemsBody');body.innerHTML='';
+    if(!current)return;
+    for(var i=0;i<items.length;i++){
+      (function(idx){
+        var it=items[idx];
+        var tr=document.createElement('tr');
+        function cellInput(value,oninput,attrs,tdStyle){
+          var td=document.createElement('td');
+          if(tdStyle)td.setAttribute('style',tdStyle);
+          var inp=document.createElement('input');
+          inp.value=value===undefined||value===null?'':String(value);
+          if(attrs){for(var k in attrs)inp.setAttribute(k,attrs[k])}
+          inp.addEventListener('input',oninput);
+          td.appendChild(inp);
+          return td;
+        }
+        tr.appendChild(cellInput(it.article,function(e){items[idx].article=e.target.value},{list:'articleOptions'},'text-align:left'));
+        tr.appendChild(cellInput(it.qty,function(e){items[idx].qty=num(e.target.value,0);recalc();renderItems()}));
+        tr.appendChild(cellInput(it.halls,function(e){items[idx].halls=num(e.target.value,0);recalc();renderItems()}));
+        tr.appendChild(cellInput(it.days,function(e){items[idx].days=num(e.target.value,0);recalc();renderItems()}));
+        tr.appendChild(cellInput(it.eventDays,function(e){items[idx].eventDays=num(e.target.value,0);recalc();renderItems()}));
+        tr.appendChild(cellInput(it.coef,function(e){items[idx].coef=num(e.target.value,1);recalc();renderItems()}));
+        tr.appendChild(cellInput(it.unitCost,function(e){items[idx].unitCost=num(e.target.value,0);recalc();renderItems()}));
+
+        var tdSum=document.createElement('td');
+        tdSum.style.fontWeight='950';
+        tdSum.style.textAlign='right';
+        tdSum.textContent=money(it.rowSum||0);
+        tr.appendChild(tdSum);
+
+        var tdX=document.createElement('td');
+        var bx=document.createElement('button');
+        bx.className='btn red xbtn';
+        bx.textContent='×';
+        bx.addEventListener('click',function(){
+          items.splice(idx,1);
+          if(!items.length)items.push(blankRow());
+          recalc();renderItems();
+        });
+        tdX.appendChild(bx);
+        tr.appendChild(tdX);
+
+        body.appendChild(tr);
+      })(i);
+    }
+  }
+
+  function loadEstimate(){
+    setStatus('Загрузка сметы…');
+    google.script.run
+      .withSuccessHandler(function(res){
+        current=res.estimate;
+        articlesByCategory=res.articlesByCategory||{};
+        items=[];
+        var src=arr(res.items);
+        for(var i=0;i<src.length;i++){
+          var x=src[i]||{};
+          items.push({article:x.article||'',qty:num(x.qty,0),halls:num(x.halls,0),days:num(x.days,0),eventDays:num(x.eventDays,0),coef:num(x.coef,1),unitCost:num(x.unitCost,0),rowSum:0});
+        }
+        if(!items.length)items.push(blankRow());
+        buildArticleDatalist(current.category);
+        recalc();renderItems();setRightHeader(current);
+        setStatus('Готово');
+      })
+      .withFailureHandler(function(e){setStatus(String(e&&e.message?e.message:e))})
+      .getEstimateItemsBootstrap(estimateId);
+  }
+
+  function init(){
+    $('btnAddRow').addEventListener('click',function(){
+      if(!current)return;
+      items.push(blankRow());
+      recalc();renderItems();
+    });
+    $('btnSave').addEventListener('click',function(){
+      if(!current)return;
+      setStatus('Сохранение…');
+      var payload=[];
+      for(var i=0;i<items.length;i++){
+        var it=items[i]||{};
+        payload.push({article:String(it.article||'').trim(),qty:num(it.qty,0),halls:num(it.halls,0),days:num(it.days,0),eventDays:num(it.eventDays,0),coef:num(it.coef,1),unitCost:num(it.unitCost,0)});
+      }
+      google.script.run
+        .withSuccessHandler(function(res){
+          setStatus('Сохранено');
+          if(res){
+            current.itemsCount=res.itemsCount;
+            current.totalSum=res.totalSum;
+            setRightHeader(current);
+          }
+        })
+        .withFailureHandler(function(e){setStatus(String(e&&e.message?e.message:e))})
+        .saveEstimateItems(current.id,payload);
+    });
+    $('btnOpenSheet').addEventListener('click',function(){
+      if(!current)return;
+      setStatus('Выгружаю на лист…');
+      google.script.run
+        .withSuccessHandler(function(){setStatus('Готово')})
+        .withFailureHandler(function(e){setStatus(String(e&&e.message?e.message:e))})
+        .exportEstimateToSheet(current.id);
+    });
+    $('btnBack').addEventListener('click',function(){
+      setStatus('Открываю сметы…');
+      google.script.run
+        .withSuccessHandler(function(){google.script.host.close()})
+        .withFailureHandler(function(e){setStatus(String(e&&e.message?e.message:e))})
+        .openEstimateBuilder();
+    });
+    loadEstimate();
+  }
+  window.addEventListener('load',init);
+</script>
+</body>
+</html>

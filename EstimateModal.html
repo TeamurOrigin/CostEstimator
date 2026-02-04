@@ -66,13 +66,6 @@
       white-space:nowrap;
     }
 
-    .grid{
-      display:grid;
-      grid-template-columns:390px 1fr;
-      gap:12px;
-      min-height:610px;
-    }
-
     .card{
       border:1px solid var(--border);
       border-radius:var(--r);
@@ -103,17 +96,6 @@
       background:linear-gradient(180deg, rgba(2,6,23,.32), rgba(2,6,23,.12));
     }
     .b{padding:12px 14px}
-
-    .tools{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
-    .pill{
-      font-size:11px;color:var(--muted);
-      padding:6px 10px;
-      border:1px solid var(--border2);
-      border-radius:999px;
-      background:rgba(2,6,23,.35);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
-      white-space:nowrap;
-    }
 
     label{display:block;font-size:11px;color:var(--muted);margin:0 0 6px}
     input,select{
@@ -201,64 +183,6 @@
     .estActions{display:flex;flex-direction:column;gap:7px;align-items:stretch}
     .estActions .btn{width:100%}
 
-    .itemsWrap{
-      border:1px solid var(--border2);
-      border-radius:14px;
-      overflow:auto;
-      max-height:420px;
-      background:rgba(2,6,23,.18);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
-    }
-
-    table.items{table-layout:fixed}
-    table.items th,table.items td{
-      padding:6px 6px;
-      text-align:center;
-      white-space:nowrap;
-    }
-    table.items th{
-      font-size:10.4px;
-      line-height:1.05;
-      letter-spacing:.1px;
-    }
-    table.items input{
-      height:28px;
-      padding:4px 8px;
-      font-size:11px;
-      border-radius:999px;
-      text-align:center;
-      border:1px solid rgba(148,163,184,.10);
-      background:rgba(2,6,23,.46);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
-    }
-    table.items td:first-child input{
-      border-radius:12px;
-      text-align:left;
-      padding:4px 10px;
-    }
-    table.items td:first-child{padding-left:10px}
-    table.items th:first-child{padding-left:10px}
-    table.items td:last-child{padding-right:10px}
-    table.items th:last-child{padding-right:10px}
-
-    .col-article{width:190px;min-width:190px;max-width:190px}
-    .col-num{width:58px;min-width:58px;max-width:58px}
-    .col-sum{width:90px;min-width:90px;max-width:90px}
-    .col-x{width:50px;min-width:50px;max-width:50px}
-
-    .sum{
-      margin-top:10px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:10px 12px;
-      border:1px solid var(--border2);
-      border-radius:14px;
-      background:linear-gradient(180deg, rgba(2,6,23,.34), rgba(2,6,23,.22));
-      font-weight:950;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
-    }
-    .sum .m{font-weight:950;color:rgba(149,166,199,.85);font-size:11px}
   </style>
 </head>
 <body>
@@ -268,103 +192,52 @@
       <div class="status" id="status">Загрузка…</div>
     </div>
 
-    <div class="grid">
-      <div class="card" id="leftCard">
-        <div class="h">Сметы</div>
-        <div class="b">
-          <div class="formGrid">
-            <div class="span2">
-              <label>Название</label>
-              <input id="newName" placeholder="Например: Видео / Трансляция">
-            </div>
-            <div>
-              <label>Категория</label>
-              <select id="newCategory"></select>
-            </div>
-            <div>
-              <label>Тип</label>
-              <select id="newType"></select>
-            </div>
-            <button class="btn acc createBtn" id="btnCreate">Создать</button>
+    <div class="card" id="leftCard">
+      <div class="h">Сметы</div>
+      <div class="b">
+        <div class="formGrid">
+          <div class="span2">
+            <label>Название</label>
+            <input id="newName" placeholder="Например: Видео / Трансляция">
           </div>
-
-          <div style="height:10px"></div>
-
-          <div class="tableShell">
-            <table>
-              <thead>
-                <tr>
-                  <th style="width:34%">Название</th>
-                  <th style="width:20%">Категория</th>
-                  <th style="width:16%">Тип</th>
-                  <th style="width:10%">Статей</th>
-                  <th style="width:10%">Сумма</th>
-                  <th style="width:10%">Действия</th>
-                </tr>
-              </thead>
-              <tbody id="estBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div class="card" id="rightCard">
-        <div class="h">
           <div>
-            <div id="curTitle">Позиции</div>
-            <div style="color:rgba(149,166,199,.85);font-size:11px;margin-top:2px" id="curSub">Сначала создайте или откройте смету</div>
+            <label>Категория</label>
+            <select id="newCategory"></select>
           </div>
-          <div class="tools">
-            <span class="pill" id="curMeta">—</span>
-            <button class="btn" id="btnOpenSheet">Выгрузить на лист</button>
+          <div>
+            <label>Тип</label>
+            <select id="newType"></select>
           </div>
+          <button class="btn acc createBtn" id="btnCreate">Создать</button>
         </div>
 
-        <div class="b">
-          <datalist id="articleOptions"></datalist>
+        <div style="height:10px"></div>
 
-          <div class="tools" style="justify-content:space-between;margin-bottom:10px">
-            <button class="btn green" id="btnAddRow">Добавить позицию</button>
-            <button class="btn acc" id="btnSave">Сохранить</button>
-          </div>
-
-          <div class="itemsWrap">
-            <table class="items">
-              <thead>
-                <tr>
-                  <th class="col-article" style="text-align:left">Статья</th>
-                  <th class="col-num">Кол-во</th>
-                  <th class="col-num">Залов</th>
-                  <th class="col-num">Дней</th>
-                  <th class="col-num">Дней<br>мер.</th>
-                  <th class="col-num">Коэф.</th>
-                  <th class="col-num">Цена<br>ед.</th>
-                  <th class="col-sum">Сумма</th>
-                  <th class="col-x"></th>
-                </tr>
-              </thead>
-              <tbody id="itemsBody"></tbody>
-            </table>
-          </div>
-
-          <div class="sum">
-            <div class="m">Итого</div>
-            <div id="totalSum">0.00</div>
-          </div>
+        <div class="tableShell">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:34%">Название</th>
+                <th style="width:20%">Категория</th>
+                <th style="width:16%">Тип</th>
+                <th style="width:10%">Статей</th>
+                <th style="width:10%">Сумма</th>
+                <th style="width:10%">Действия</th>
+              </tr>
+            </thead>
+            <tbody id="estBody"></tbody>
+          </table>
         </div>
       </div>
     </div>
   </div>
 
 <script>
-  var boot=null,current=null,items=[];
+  var boot=null;
   function $(id){return document.getElementById(id)}
   function setStatus(t){$('status').textContent=t}
   function arr(a){return a&&a.length?a:[]}
   function money(n){var x=Number(n||0);return x.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})}
-  function num(v,def){if(def===undefined)def=0;if(v===null||v===undefined||v==='')return def;var x=Number(String(v).replace(',','.'));return isFinite(x)?x:def}
-  function blankRow(){return{article:'',qty:1,halls:1,days:1,eventDays:1,coef:1,unitCost:0,rowSum:0}}
-  function lockRight(disabled){var c=$('rightCard');if(disabled)c.classList.add('disabled');else c.classList.remove('disabled')}
   function fillCategories(){var sel=$('newCategory');sel.innerHTML='';var cats=arr(boot&&boot.categories);for(var i=0;i<cats.length;i++){var o=document.createElement('option');o.value=cats[i];o.textContent=cats[i];sel.appendChild(o)}}
   function fillTypes(){var sel=$('newType');sel.innerHTML='';var types=arr(boot&&boot.types);for(var i=0;i<types.length;i++){var o=document.createElement('option');o.value=types[i];o.textContent=types[i];sel.appendChild(o)}}
   function renderEstimates(){
@@ -406,82 +279,6 @@
       body.appendChild(tr);
     }
   }
-  function setRightHeader(est){
-    if(!est){
-      $('curTitle').textContent='Позиции';
-      $('curSub').textContent='Сначала создайте или откройте смету';
-      $('curMeta').textContent='—';
-      return;
-    }
-    var meta='Категория: '+(est.category||'');
-    if(est.type)meta+=' • Тип: '+est.type;
-    $('curTitle').textContent=est.name||'';
-    $('curSub').textContent=meta;
-    $('curMeta').textContent='Статей: '+String(est.itemsCount||0)+' • Сумма: '+money(est.totalSum||0);
-  }
-  function buildArticleDatalist(category){
-    var dl=$('articleOptions');dl.innerHTML='';
-    var m=(boot&&boot.articlesByCategory)?boot.articlesByCategory:{};
-    var list=arr(m&&m[category]);
-    for(var i=0;i<list.length;i++){var o=document.createElement('option');o.value=list[i];dl.appendChild(o)}
-  }
-  function recalc(){
-    var total=0;
-    for(var i=0;i<items.length;i++){
-      var it=items[i];
-      var rowSum=num(it.qty,0)*num(it.halls,0)*num(it.days,0)*num(it.eventDays,0)*num(it.coef,1)*num(it.unitCost,0);
-      it.rowSum=rowSum;
-      total+=rowSum;
-    }
-    $('totalSum').textContent=money(total);
-  }
-  function renderItems(){
-    var body=$('itemsBody');body.innerHTML='';
-    if(!current)return;
-    for(var i=0;i<items.length;i++){
-      (function(idx){
-        var it=items[idx];
-        var tr=document.createElement('tr');
-        function cellInput(value,oninput,attrs,tdStyle){
-          var td=document.createElement('td');
-          if(tdStyle)td.setAttribute('style',tdStyle);
-          var inp=document.createElement('input');
-          inp.value=value===undefined||value===null?'':String(value);
-          if(attrs){for(var k in attrs)inp.setAttribute(k,attrs[k])}
-          inp.addEventListener('input',oninput);
-          td.appendChild(inp);
-          return td;
-        }
-        tr.appendChild(cellInput(it.article,function(e){items[idx].article=e.target.value},{list:'articleOptions'},'text-align:left'));
-        tr.appendChild(cellInput(it.qty,function(e){items[idx].qty=num(e.target.value,0);recalc();renderItems()}));
-        tr.appendChild(cellInput(it.halls,function(e){items[idx].halls=num(e.target.value,0);recalc();renderItems()}));
-        tr.appendChild(cellInput(it.days,function(e){items[idx].days=num(e.target.value,0);recalc();renderItems()}));
-        tr.appendChild(cellInput(it.eventDays,function(e){items[idx].eventDays=num(e.target.value,0);recalc();renderItems()}));
-        tr.appendChild(cellInput(it.coef,function(e){items[idx].coef=num(e.target.value,1);recalc();renderItems()}));
-        tr.appendChild(cellInput(it.unitCost,function(e){items[idx].unitCost=num(e.target.value,0);recalc();renderItems()}));
-
-        var tdSum=document.createElement('td');
-        tdSum.style.fontWeight='950';
-        tdSum.style.textAlign='right';
-        tdSum.textContent=money(it.rowSum||0);
-        tr.appendChild(tdSum);
-
-        var tdX=document.createElement('td');
-        var bx=document.createElement('button');
-        bx.className='btn red xbtn';
-        bx.textContent='×';
-        bx.addEventListener('click',function(){
-          items.splice(idx,1);
-          if(!items.length)items.push(blankRow());
-          recalc();renderItems();
-        });
-        tdX.appendChild(bx);
-        tr.appendChild(tdX);
-
-        body.appendChild(tr);
-      })(i);
-    }
-  }
   function refreshBootstrap(cb){
     google.script.run
       .withSuccessHandler(function(data){
@@ -492,34 +289,18 @@
       .getBootstrapData();
   }
   function openEstimate(id){
-    setStatus('Загрузка сметы…');
+    setStatus('Открываю смету…');
     google.script.run
-      .withSuccessHandler(function(res){
-        current=res.estimate;
-        items=[];
-        var src=arr(res.items);
-        for(var i=0;i<src.length;i++){
-          var x=src[i]||{};
-          items.push({article:x.article||'',qty:num(x.qty,0),halls:num(x.halls,0),days:num(x.days,0),eventDays:num(x.eventDays,0),coef:num(x.coef,1),unitCost:num(x.unitCost,0),rowSum:0});
-        }
-        if(!items.length)items.push(blankRow());
-        buildArticleDatalist(current.category);
-        lockRight(false);
-        recalc();renderItems();setRightHeader(current);
-        setStatus('Готово');
+      .withSuccessHandler(function(){
+        google.script.host.close();
       })
       .withFailureHandler(function(e){setStatus(String(e&&e.message?e.message:e))})
-      .getEstimateItems(id);
+      .openEstimateItems(id);
   }
   function delEstimate(id){
     setStatus('Удаление…');
     google.script.run
       .withSuccessHandler(function(){
-        if(current&&current.id===id){
-          current=null;items=[];
-          lockRight(true);setRightHeader(null);
-          renderItems();$('totalSum').textContent='0.00';
-        }
         setStatus('Готово');
         refreshBootstrap();
       })
@@ -544,50 +325,10 @@
         .withFailureHandler(function(e){setStatus(String(e&&e.message?e.message:e))})
         .createEstimate({name:name,category:category,type:type});
     });
-    $('btnAddRow').addEventListener('click',function(){
-      if(!current)return;
-      items.push(blankRow());
-      recalc();renderItems();
-    });
-    $('btnSave').addEventListener('click',function(){
-      if(!current)return;
-      setStatus('Сохранение…');
-      var payload=[];
-      for(var i=0;i<items.length;i++){
-        var it=items[i]||{};
-        payload.push({article:String(it.article||'').trim(),qty:num(it.qty,0),halls:num(it.halls,0),days:num(it.days,0),eventDays:num(it.eventDays,0),coef:num(it.coef,1),unitCost:num(it.unitCost,0)});
-      }
-      google.script.run
-        .withSuccessHandler(function(){
-          setStatus('Сохранено');
-          refreshBootstrap(function(){
-            var list=arr(boot&&boot.estimates);
-            for(var j=0;j<list.length;j++){
-              if(list[j].id===current.id){
-                current.itemsCount=list[j].itemsCount;
-                current.totalSum=list[j].totalSum;
-                setRightHeader(current);
-                break;
-              }
-            }
-          });
-        })
-        .withFailureHandler(function(e){setStatus(String(e&&e.message?e.message:e))})
-        .saveEstimateItems(current.id,payload);
-    });
-    $('btnOpenSheet').addEventListener('click',function(){
-      if(!current)return;
-      setStatus('Выгружаю на лист…');
-      google.script.run
-        .withSuccessHandler(function(){setStatus('Готово')})
-        .withFailureHandler(function(e){setStatus(String(e&&e.message?e.message:e))})
-        .exportEstimateToSheet(current.id);
-    });
     setStatus('Загрузка…');
     google.script.run
       .withSuccessHandler(function(data){
         boot=data;fillCategories();fillTypes();renderEstimates();
-        lockRight(true);setRightHeader(null);
         setStatus('Готово');
       })
       .withFailureHandler(function(e){setStatus(String(e&&e.message?e.message:e))})
