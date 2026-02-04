@@ -336,7 +336,14 @@ function toNumber_(v, def) {
 function loadEstimates_() {
   var props = PropertiesService.getDocumentProperties();
   var raw = props.getProperty(ESTIMATES_STORE_KEY);
-  if (!raw) return [];
+  if (!raw) {
+    var legacy = loadLegacyEstimatesFromSheet_();
+    if (legacy.length) {
+      saveEstimates_(legacy);
+      return legacy;
+    }
+    return [];
+  }
   try {
     var parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
@@ -347,6 +354,137 @@ function loadEstimates_() {
 
 function saveEstimates_(list) {
   PropertiesService.getDocumentProperties().setProperty(ESTIMATES_STORE_KEY, JSON.stringify(list || []));
+}
+
+function loadLegacyEstimatesFromSheet_() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName(ESTIMATES_SHEET_NAME);
+  if (!sh) return [];
+
+  var lastRow = sh.getLastRow();
+  var lastCol = sh.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) return [];
+
+  var values = sh.getRange(1, 1, lastRow, lastCol).getValues();
+  var headers = values[0].map(normalizeHeader_);
+  var map = inferLegacyEstimatesMap_(headers, values);
+  var startIndex = map.hasHeader ? 1 : 0;
+
+  var out = [];
+  for (var r = startIndex; r < values.length; r++) {
+    var row = values[r] || [];
+    var name = String(cellAt_(row, map.name) || '').trim();
+    var category = String(cellAt_(row, map.category) || '').trim();
+    if (!name && !category) continue;
+
+    var id = String(cellAt_(row, map.id) || '').trim();
+    if (!id) id = Utilities.getUuid();
+
+    var itemsCount = toNumber_(cellAt_(row, map.itemsCount), 0);
+    var totalSum = toNumber_(cellAt_(row, map.totalSum), 0);
+    var sheetName = String(cellAt_(row, map.sheetName) || '').trim();
+
+    var updatedAtRaw = cellAt_(row, map.updatedAt);
+    var updatedAt = '';
+    if (updatedAtRaw instanceof Date) {
+      updatedAt = updatedAtRaw.toISOString();
+    } else {
+      updatedAt = String(updatedAtRaw || '').trim();
+    }
+    if (!updatedAt) updatedAt = new Date().toISOString();
+
+    out.push({
+      id: id,
+      name: name,
+      category: category,
+      itemsCount: itemsCount,
+      totalSum: totalSum,
+      sheetName: sheetName,
+      updatedAt: updatedAt
+    });
+  }
+  return out;
+}
+
+function inferLegacyEstimatesMap_(headers, values) {
+  var idx = {
+    id: findHeaderIndex_(headers, ['id', 'ид', 'uuid', 'guid']),
+    name: findHeaderIndex_(headers, ['название', 'имя', 'наименование']),
+    category: findHeaderIndex_(headers, ['категория', 'кат']),
+    itemsCount: findHeaderIndex_(headers, ['статей', 'позиц', 'кол-во', 'количество', 'items']),
+    totalSum: findHeaderIndex_(headers, ['сумма', 'итого', 'total']),
+    sheetName: findHeaderIndex_(headers, ['лист', 'sheet']),
+    updatedAt: findHeaderIndex_(headers, ['обнов', 'дата', 'updated'])
+  };
+
+  var hasHeader = false;
+  for (var key in idx) {
+    if (idx[key] >= 0) {
+      hasHeader = true;
+      break;
+    }
+  }
+
+  if (!hasHeader) {
+    idx = {
+      id: -1,
+      name: 0,
+      category: 1,
+      itemsCount: 2,
+      totalSum: 3,
+      sheetName: 4,
+      updatedAt: 5
+    };
+  }
+
+  if (idx.id < 0) {
+    idx.id = detectUuidColumn_(values, hasHeader ? 1 : 0);
+  }
+
+  return {
+    hasHeader: hasHeader,
+    id: idx.id,
+    name: idx.name,
+    category: idx.category,
+    itemsCount: idx.itemsCount,
+    totalSum: idx.totalSum,
+    sheetName: idx.sheetName,
+    updatedAt: idx.updatedAt
+  };
+}
+
+function normalizeHeader_(value) {
+  return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function findHeaderIndex_(headers, candidates) {
+  for (var i = 0; i < headers.length; i++) {
+    var h = headers[i];
+    if (!h) continue;
+    for (var j = 0; j < candidates.length; j++) {
+      var c = candidates[j];
+      if (h === c || h.indexOf(c) !== -1) return i;
+    }
+  }
+  return -1;
+}
+
+function detectUuidColumn_(values, startIndex) {
+  var uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  var sampleRows = Math.min(values.length, startIndex + 20);
+  var maxCols = values[0] ? values[0].length : 0;
+  for (var c = 0; c < maxCols; c++) {
+    for (var r = startIndex; r < sampleRows; r++) {
+      var cell = values[r] ? values[r][c] : '';
+      if (typeof cell === 'string' && uuid.test(cell.trim())) return c;
+    }
+  }
+  return -1;
+}
+
+function cellAt_(row, index) {
+  if (index === undefined || index === null || index < 0) return '';
+  return row[index];
 }
 
 function loadItems_(id) {
