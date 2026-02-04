@@ -1,6 +1,8 @@
 var ESTIMATES_SHEET_NAME = 'Сметы';
 var REF_SHEET_NAME = 'Справочник сметы';
 var ITEMS_SHEET_PREFIX = 'Смета';
+var ESTIMATES_STORE_KEY = 'estimates_store_v1';
+var ITEMS_STORE_PREFIX = 'estimate_items_v1_';
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Смета')
@@ -34,27 +36,18 @@ function createEstimate(payload) {
     if (!name) throw new Error('Укажите название.');
     if (!category) throw new Error('Укажите категорию.');
 
-    var ss = SpreadsheetApp.getActive();
-    var estSheet = ss.getSheetByName(ESTIMATES_SHEET_NAME);
-
-    var data = estSheet.getDataRange().getValues();
-    for (var r = 1; r < data.length; r++) {
-      if (String(data[r][1]).trim() === name && String(data[r][2]).trim() === category) {
-        return { id: String(data[r][0]), name: name, category: category, itemsCount: Number(data[r][3]) || 0, totalSum: Number(data[r][4]) || 0, sheetName: String(data[r][5] || '') };
+    var list = loadEstimates_();
+    for (var i = 0; i < list.length; i++) {
+      if (String(list[i].name || '').trim() === name && String(list[i].category || '').trim() === category) {
+        return list[i];
       }
     }
 
     var id = Utilities.getUuid();
-    var baseSheetName = ITEMS_SHEET_PREFIX + ' • ' + category + ' • ' + name;
-    var sheetName = makeUniqueSheetName_(baseSheetName, ss);
-
-    var itemsSheet = ss.insertSheet(sheetName);
-    buildItemsSheet_(itemsSheet, name, category);
-
-    estSheet.appendRow([id, name, category, 0, 0, sheetName, new Date()]);
-    try { estSheet.hideColumns(1); } catch (e) {}
-
-    return { id: id, name: name, category: category, itemsCount: 0, totalSum: 0, sheetName: sheetName };
+    var est = { id: id, name: name, category: category, itemsCount: 0, totalSum: 0, sheetName: '', updatedAt: new Date().toISOString() };
+    list.push(est);
+    saveEstimates_(list);
+    return est;
   } finally {
     lock.releaseLock();
   }
@@ -66,15 +59,15 @@ function deleteEstimate(id) {
   try {
     ensureCoreSheets_();
 
-    var ss = SpreadsheetApp.getActive();
-    var estSheet = ss.getSheetByName(ESTIMATES_SHEET_NAME);
-    var data = estSheet.getDataRange().getValues();
-
-    for (var r = 1; r < data.length; r++) {
-      if (String(data[r][0]) === String(id)) {
-        var sheetName = String(data[r][5] || '').trim();
-        estSheet.deleteRow(r + 1);
+    var list = loadEstimates_();
+    for (var i = 0; i < list.length; i++) {
+      if (String(list[i].id) === String(id)) {
+        var sheetName = String(list[i].sheetName || '').trim();
+        list.splice(i, 1);
+        saveEstimates_(list);
+        deleteItems_(id);
         if (sheetName) {
+          var ss = SpreadsheetApp.getActive();
           var sh = ss.getSheetByName(sheetName);
           if (sh) ss.deleteSheet(sh);
         }
@@ -92,33 +85,7 @@ function getEstimateItems(id) {
 
   var est = findEstimateById_(id);
   if (!est) throw new Error('Смета не найдена.');
-
-  var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName(est.sheetName);
-  if (!sh) throw new Error('Лист сметы не найден.');
-
-  var last = sh.getLastRow();
-  if (last < 3) return { estimate: est, items: [] };
-
-  var values = sh.getRange(3, 1, last - 2, 7).getValues();
-  var items = [];
-
-  for (var i = 0; i < values.length; i++) {
-    var row = values[i];
-    var article = String(row[0] || '').trim();
-    var qty = toNumber_(row[1], 0);
-    var halls = toNumber_(row[2], 0);
-    var days = toNumber_(row[3], 0);
-    var eventDays = toNumber_(row[4], 0);
-    var coef = toNumber_(row[5], 1);
-    var unitCost = toNumber_(row[6], 0);
-
-    if (!article && qty === 0 && halls === 0 && days === 0 && eventDays === 0 && unitCost === 0) continue;
-
-    items.push({ article: article, qty: qty, halls: halls, days: days, eventDays: eventDays, coef: coef, unitCost: unitCost });
-  }
-
-  return { estimate: est, items: items };
+  return { estimate: est, items: loadItems_(id) };
 }
 
 function saveEstimateItems(id, items) {
@@ -129,10 +96,6 @@ function saveEstimateItems(id, items) {
 
     var est = findEstimateById_(id);
     if (!est) throw new Error('Смета не найдена.');
-
-    var ss = SpreadsheetApp.getActive();
-    var sh = ss.getSheetByName(est.sheetName);
-    if (!sh) throw new Error('Лист сметы не найден.');
 
     var cleaned = Array.isArray(items) ? items : [];
     var out = [];
@@ -151,32 +114,12 @@ function saveEstimateItems(id, items) {
       var coef = toNumber_(it.coef, 1);
       var unitCost = toNumber_(it.unitCost, 0);
 
-      out.push([article, qty, halls, days, eventDays, coef, unitCost]);
+      out.push({ article: article, qty: qty, halls: halls, days: days, eventDays: eventDays, coef: coef, unitCost: unitCost });
       total += qty * halls * days * eventDays * coef * unitCost;
       count++;
     }
 
-    var lastRow = Math.max(sh.getLastRow(), 3);
-    if (lastRow >= 3) sh.getRange(3, 1, lastRow - 2, 8).clearContent();
-
-    if (out.length) {
-      sh.getRange(3, 1, out.length, 7).setValues(out);
-
-      var formulas = [];
-      for (var k = 0; k < out.length; k++) {
-        var rr = 3 + k;
-        formulas.push(['=B' + rr + '*C' + rr + '*D' + rr + '*E' + rr + '*F' + rr + '*G' + rr]);
-      }
-      sh.getRange(3, 8, formulas.length, 1).setFormulas(formulas);
-
-      sh.getRange(3, 2, out.length, 5).setNumberFormat('0.########');
-      sh.getRange(3, 7, out.length, 2).setNumberFormat('0.00');
-
-      applyArticleValidation_(sh, est.category, out.length);
-    } else {
-      applyArticleValidation_(sh, est.category, 1);
-    }
-
+    saveItems_(id, out);
     updateEstimateTotals_(id, count, total, est.sheetName);
     return { itemsCount: count, totalSum: total };
   } finally {
@@ -198,18 +141,59 @@ function activateEstimateSheet(id) {
   return true;
 }
 
+function exportEstimateToSheet(id) {
+  var lock = LockService.getDocumentLock();
+  lock.waitLock(10000);
+  try {
+    ensureCoreSheets_();
+
+    var est = findEstimateById_(id);
+    if (!est) throw new Error('Смета не найдена.');
+
+    var ss = SpreadsheetApp.getActive();
+    var sheetName = String(est.sheetName || '').trim();
+    var sh = sheetName ? ss.getSheetByName(sheetName) : null;
+    if (!sh) {
+      var baseSheetName = ITEMS_SHEET_PREFIX + ' • ' + est.category + ' • ' + est.name;
+      sheetName = makeUniqueSheetName_(baseSheetName, ss);
+      sh = ss.insertSheet(sheetName);
+    }
+
+    buildItemsSheet_(sh, est.name, est.category);
+
+    var items = loadItems_(id);
+    if (items.length) {
+      var values = [];
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i] || {};
+        values.push([it.article || '', toNumber_(it.qty, 0), toNumber_(it.halls, 0), toNumber_(it.days, 0), toNumber_(it.eventDays, 0), toNumber_(it.coef, 1), toNumber_(it.unitCost, 0)]);
+      }
+      sh.getRange(3, 1, values.length, 7).setValues(values);
+
+      var formulas = [];
+      for (var k = 0; k < values.length; k++) {
+        var rr = 3 + k;
+        formulas.push(['=B' + rr + '*C' + rr + '*D' + rr + '*E' + rr + '*F' + rr + '*G' + rr]);
+      }
+      sh.getRange(3, 8, formulas.length, 1).setFormulas(formulas);
+
+      sh.getRange(3, 2, values.length, 5).setNumberFormat('0.########');
+      sh.getRange(3, 7, values.length, 2).setNumberFormat('0.00');
+      applyArticleValidation_(sh, est.category, values.length);
+    } else {
+      applyArticleValidation_(sh, est.category, 1);
+    }
+
+    updateEstimateTotals_(id, est.itemsCount, est.totalSum, sheetName);
+    ss.setActiveSheet(sh);
+    return { sheetName: sheetName };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function ensureCoreSheets_() {
   var ss = SpreadsheetApp.getActive();
-
-  var est = ss.getSheetByName(ESTIMATES_SHEET_NAME);
-  if (!est) {
-    est = ss.insertSheet(ESTIMATES_SHEET_NAME);
-    est.getRange(1, 1, 1, 7).setValues([['ID', 'Название', 'Категория', 'Итого статей', 'Итого сумма', 'Лист', 'Обновлено']]);
-    est.setFrozenRows(1);
-    est.getRange(1, 2, 1, 6).setFontWeight('bold');
-    try { est.hideColumns(1); } catch (e) {}
-    est.autoResizeColumns(2, 6);
-  }
 
   if (!ss.getSheetByName(REF_SHEET_NAME)) {
     var ref = ss.insertSheet(REF_SHEET_NAME);
@@ -259,45 +243,30 @@ function readRef_() {
 }
 
 function listEstimates_() {
-  var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName(ESTIMATES_SHEET_NAME);
-  if (!sh) return [];
-
-  var values = sh.getDataRange().getValues();
-  var out = [];
-  for (var r = 1; r < values.length; r++) {
-    var row = values[r];
-    var id = String(row[0] || '').trim();
-    if (!id) continue;
-    out.push({ id: id, name: String(row[1] || ''), category: String(row[2] || ''), itemsCount: Number(row[3]) || 0, totalSum: Number(row[4]) || 0, sheetName: String(row[5] || '') });
-  }
+  var out = loadEstimates_();
   out.reverse();
   return out;
 }
 
 function findEstimateById_(id) {
-  var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName(ESTIMATES_SHEET_NAME);
-  if (!sh) return null;
-
-  var values = sh.getDataRange().getValues();
-  for (var r = 1; r < values.length; r++) {
-    if (String(values[r][0]) === String(id)) {
-      return { id: String(values[r][0]), name: String(values[r][1] || ''), category: String(values[r][2] || ''), itemsCount: Number(values[r][3]) || 0, totalSum: Number(values[r][4]) || 0, sheetName: String(values[r][5] || ''), _rowIndex: r + 1 };
+  var list = loadEstimates_();
+  for (var i = 0; i < list.length; i++) {
+    if (String(list[i].id) === String(id)) {
+      return list[i];
     }
   }
   return null;
 }
 
 function updateEstimateTotals_(id, itemsCount, totalSum, sheetName) {
-  var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName(ESTIMATES_SHEET_NAME);
-  var values = sh.getDataRange().getValues();
-
-  for (var r = 1; r < values.length; r++) {
-    if (String(values[r][0]) === String(id)) {
-      sh.getRange(r + 1, 4, 1, 4).setValues([[itemsCount, totalSum, sheetName, new Date()]]);
-      sh.getRange(r + 1, 5).setNumberFormat('0.00');
+  var list = loadEstimates_();
+  for (var i = 0; i < list.length; i++) {
+    if (String(list[i].id) === String(id)) {
+      list[i].itemsCount = itemsCount;
+      list[i].totalSum = totalSum;
+      list[i].sheetName = sheetName || '';
+      list[i].updatedAt = new Date().toISOString();
+      saveEstimates_(list);
       return;
     }
   }
@@ -362,4 +331,40 @@ function toNumber_(v, def) {
   if (v === '' || v === null || v === undefined) return def;
   var n = Number(String(v).replace(',', '.'));
   return isFinite(n) ? n : def;
+}
+
+function loadEstimates_() {
+  var props = PropertiesService.getDocumentProperties();
+  var raw = props.getProperty(ESTIMATES_STORE_KEY);
+  if (!raw) return [];
+  try {
+    var parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveEstimates_(list) {
+  PropertiesService.getDocumentProperties().setProperty(ESTIMATES_STORE_KEY, JSON.stringify(list || []));
+}
+
+function loadItems_(id) {
+  var props = PropertiesService.getDocumentProperties();
+  var raw = props.getProperty(ITEMS_STORE_PREFIX + id);
+  if (!raw) return [];
+  try {
+    var parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveItems_(id, items) {
+  PropertiesService.getDocumentProperties().setProperty(ITEMS_STORE_PREFIX + id, JSON.stringify(items || []));
+}
+
+function deleteItems_(id) {
+  PropertiesService.getDocumentProperties().deleteProperty(ITEMS_STORE_PREFIX + id);
 }

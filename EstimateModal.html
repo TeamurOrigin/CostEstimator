@@ -86,7 +86,7 @@
           </div>
           <div class="tools">
             <span class="pill" id="curMeta">—</span>
-            <button class="btn" id="btnOpenSheet">Открыть лист</button>
+            <button class="btn" id="btnOpenSheet">Выгрузить на лист</button>
           </div>
         </div>
 
@@ -150,7 +150,7 @@
     $('btnCreate').addEventListener('click',function(){var name=$('newName').value.trim();var category=$('newCategory').value.trim();if(!name){setStatus('Укажите название');return}if(!category){setStatus('Укажите категорию');return}setStatus('Создание…');google.script.run.withSuccessHandler(function(est){$('newName').value='';setStatus('Готово');refreshBootstrap(function(){openEstimate(est.id)})}).withFailureHandler(function(e){setStatus(String(e&&e.message?e.message:e))}).createEstimate({name:name,category:category})});
     $('btnAddRow').addEventListener('click',function(){if(!current)return;items.push(blankRow());recalc();renderItems()});
     $('btnSave').addEventListener('click',function(){if(!current)return;setStatus('Сохранение…');var payload=[];for(var i=0;i<items.length;i++){var it=items[i]||{};payload.push({article:String(it.article||'').trim(),qty:num(it.qty,0),halls:num(it.halls,0),days:num(it.days,0),eventDays:num(it.eventDays,0),coef:num(it.coef,1),unitCost:num(it.unitCost,0)})}google.script.run.withSuccessHandler(function(){setStatus('Сохранено');refreshBootstrap(function(){var list=arr(boot&&boot.estimates);for(var j=0;j<list.length;j++){if(list[j].id===current.id){current.itemsCount=list[j].itemsCount;current.totalSum=list[j].totalSum;setRightHeader(current);break}}})}).withFailureHandler(function(e){setStatus(String(e&&e.message?e.message:e))}).saveEstimateItems(current.id,payload)});
-    $('btnOpenSheet').addEventListener('click',function(){if(!current)return;setStatus('Открываю лист…');google.script.run.withSuccessHandler(function(){setStatus('Готово')}).withFailureHandler(function(e){setStatus(String(e&&e.message?e.message:e))}).activateEstimateSheet(current.id)});
+    $('btnOpenSheet').addEventListener('click',function(){if(!current)return;setStatus('Выгружаю на лист…');google.script.run.withSuccessHandler(function(){setStatus('Готово')}).withFailureHandler(function(e){setStatus(String(e&&e.message?e.message:e))}).exportEstimateToSheet(current.id)});
     setStatus('Загрузка…');
     google.script.run.withSuccessHandler(function(data){boot=data;fillCategories();renderEstimates();lockRight(true);setRightHeader(null);setStatus('Готово')}).withFailureHandler(function(e){setStatus(String(e&&e.message?e.message:e))}).getBootstrapData()
   }
