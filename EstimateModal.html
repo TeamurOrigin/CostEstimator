@@ -26,11 +26,12 @@
     .btn.red{border-color:rgba(239,68,68,.45);box-shadow:0 0 0 3px rgba(239,68,68,.10)}
     .xbtn{padding:7px 10px;border-radius:10px;font-weight:900}
     table{width:100%;border-collapse:collapse;font-size:12.5px}
-    table.items th,table.items td{padding:6px 6px}
-    .col-article{min-width:200px}
-    .col-qty,.col-halls,.col-days,.col-event-days,.col-coef,.col-unit{min-width:70px}
-    .col-sum{min-width:90px}
-    table.items input{padding:8px 8px}
+    table.items th,table.items td{padding:6px 6px;text-align:center}
+    .col-article{min-width:180px}
+    .col-qty,.col-halls,.col-days,.col-event-days,.col-coef,.col-unit{min-width:64px}
+    .col-sum{min-width:80px}
+    table.items input{padding:6px 6px;text-align:center}
+    .items .left{text-align:left}
     th,td{padding:8px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
     th{color:var(--muted);font-weight:900;text-align:left;background:rgba(2,6,23,.18)}
     .pill{font-size:12px;color:var(--muted);padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:rgba(2,6,23,.25)}
@@ -109,13 +110,13 @@
             <table class="items">
               <thead>
                 <tr>
-                  <th class="col-article">Статья</th>
+                  <th class="col-article left">Статья</th>
                   <th class="col-qty">Кол-во</th>
                   <th class="col-halls">Залов</th>
                   <th class="col-days">Дней</th>
                   <th class="col-event-days">Дней мероприятий</th>
                   <th class="col-coef">Коэф.</th>
-                  <th class="col-unit">Стоимость за ед.</th>
+                  <th class="col-unit">Стоимость<br>за ед.</th>
                   <th class="col-sum">Сумма</th>
                   <th style="min-width:60px"></th>
                 </tr>
@@ -147,7 +148,7 @@
   function setRightHeader(est){if(!est){$('curTitle').textContent='Позиции';$('curSub').textContent='Сначала создайте или откройте смету';$('curMeta').textContent='—';return}$('curTitle').textContent=est.name||'';$('curSub').textContent='Категория: '+(est.category||'');$('curMeta').textContent='Статей: '+String(est.itemsCount||0)+' • Сумма: '+money(est.totalSum||0)}
   function buildArticleDatalist(category){var dl=$('articleOptions');dl.innerHTML='';var m=(boot&&boot.articlesByCategory)?boot.articlesByCategory:{};var list=arr(m&&m[category]);for(var i=0;i<list.length;i++){var o=document.createElement('option');o.value=list[i];dl.appendChild(o)}}
   function recalc(){var total=0;for(var i=0;i<items.length;i++){var it=items[i];var rowSum=num(it.qty,0)*num(it.halls,0)*num(it.days,0)*num(it.eventDays,0)*num(it.coef,1)*num(it.unitCost,0);it.rowSum=rowSum;total+=rowSum}$('totalSum').textContent=money(total)}
-  function renderItems(){var body=$('itemsBody');body.innerHTML='';if(!current)return;for(var i=0;i<items.length;i++){(function(idx){var it=items[idx];var tr=document.createElement('tr');function cellInput(value,oninput,attrs){var td=document.createElement('td');var inp=document.createElement('input');inp.value=value===undefined||value===null?'':String(value);if(attrs){for(var k in attrs)inp.setAttribute(k,attrs[k])}inp.addEventListener('input',oninput);td.appendChild(inp);return td}tr.appendChild(cellInput(it.article,function(e){items[idx].article=e.target.value},{list:'articleOptions'}));tr.appendChild(cellInput(it.qty,function(e){items[idx].qty=num(e.target.value,0);recalc();renderItems()}));tr.appendChild(cellInput(it.halls,function(e){items[idx].halls=num(e.target.value,0);recalc();renderItems()}));tr.appendChild(cellInput(it.days,function(e){items[idx].days=num(e.target.value,0);recalc();renderItems()}));tr.appendChild(cellInput(it.eventDays,function(e){items[idx].eventDays=num(e.target.value,0);recalc();renderItems()}));tr.appendChild(cellInput(it.coef,function(e){items[idx].coef=num(e.target.value,1);recalc();renderItems()}));tr.appendChild(cellInput(it.unitCost,function(e){items[idx].unitCost=num(e.target.value,0);recalc();renderItems()}));var tdSum=document.createElement('td');tdSum.style.fontWeight='900';tdSum.textContent=money(it.rowSum||0);tr.appendChild(tdSum);var tdX=document.createElement('td');var bx=document.createElement('button');bx.className='btn red xbtn';bx.textContent='×';bx.addEventListener('click',function(){items.splice(idx,1);if(!items.length)items.push(blankRow());recalc();renderItems()});tdX.appendChild(bx);tr.appendChild(tdX);body.appendChild(tr)})(i)}}
+  function renderItems(){var body=$('itemsBody');body.innerHTML='';if(!current)return;for(var i=0;i<items.length;i++){(function(idx){var it=items[idx];var tr=document.createElement('tr');function cellInput(value,oninput,attrs,tdClass){var td=document.createElement('td');if(tdClass)td.className=tdClass;var inp=document.createElement('input');inp.value=value===undefined||value===null?'':String(value);if(attrs){for(var k in attrs)inp.setAttribute(k,attrs[k])}inp.addEventListener('input',oninput);td.appendChild(inp);return td}tr.appendChild(cellInput(it.article,function(e){items[idx].article=e.target.value},{list:'articleOptions'},'left'));tr.appendChild(cellInput(it.qty,function(e){items[idx].qty=num(e.target.value,0);recalc();renderItems()}));tr.appendChild(cellInput(it.halls,function(e){items[idx].halls=num(e.target.value,0);recalc();renderItems()}));tr.appendChild(cellInput(it.days,function(e){items[idx].days=num(e.target.value,0);recalc();renderItems()}));tr.appendChild(cellInput(it.eventDays,function(e){items[idx].eventDays=num(e.target.value,0);recalc();renderItems()}));tr.appendChild(cellInput(it.coef,function(e){items[idx].coef=num(e.target.value,1);recalc();renderItems()}));tr.appendChild(cellInput(it.unitCost,function(e){items[idx].unitCost=num(e.target.value,0);recalc();renderItems()}));var tdSum=document.createElement('td');tdSum.style.fontWeight='900';tdSum.textContent=money(it.rowSum||0);tr.appendChild(tdSum);var tdX=document.createElement('td');var bx=document.createElement('button');bx.className='btn red xbtn';bx.textContent='×';bx.addEventListener('click',function(){items.splice(idx,1);if(!items.length)items.push(blankRow());recalc();renderItems()});tdX.appendChild(bx);tr.appendChild(tdX);body.appendChild(tr)})(i)}}
   function refreshBootstrap(cb){google.script.run.withSuccessHandler(function(data){boot=data;fillCategories();renderEstimates();if(cb)cb()}).withFailureHandler(function(e){setStatus(String(e&&e.message?e.message:e))}).getBootstrapData()}
   function openEstimate(id){setStatus('Загрузка сметы…');google.script.run.withSuccessHandler(function(res){current=res.estimate;items=[];var src=arr(res.items);for(var i=0;i<src.length;i++){var x=src[i]||{};items.push({article:x.article||'',qty:num(x.qty,0),halls:num(x.halls,0),days:num(x.days,0),eventDays:num(x.eventDays,0),coef:num(x.coef,1),unitCost:num(x.unitCost,0),rowSum:0})}if(!items.length)items.push(blankRow());buildArticleDatalist(current.category);lockRight(false);recalc();renderItems();setRightHeader(current);setStatus('Готово')}).withFailureHandler(function(e){setStatus(String(e&&e.message?e.message:e))}).getEstimateItems(id)}
   function delEstimate(id){setStatus('Удаление…');google.script.run.withSuccessHandler(function(){if(current&&current.id===id){current=null;items=[];lockRight(true);setRightHeader(null);renderItems();$('totalSum').textContent='0.00'}setStatus('Готово');refreshBootstrap()}).withFailureHandler(function(e){setStatus(String(e&&e.message?e.message:e))}).deleteEstimate(id)}
