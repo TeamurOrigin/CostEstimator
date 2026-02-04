@@ -377,20 +377,34 @@ function deleteItems_(estimateId) {
 }
 
 function normalizeItemRow_(it) {
+  var qty = toNum_(it.qty, 0);
+  var halls = toNum_(it.halls, 1);
+  var days = toNum_(it.days, 1);
+  var eventDays = toNum_(it.eventDays, 1);
+  var coef = toNum_(it.coef, 1);
+  var unitCost = toNum_(it.unitCost, 0);
+
+  if ((qty > 0 || unitCost > 0)) {
+    if (halls === 0) halls = 1;
+    if (days === 0) days = 1;
+    if (eventDays === 0) eventDays = 1;
+    if (coef === 0) coef = 1;
+  }
+
   return {
     article: String(it.article || '').trim(),
-    qty: toNum_(it.qty, 0),
-    halls: toNum_(it.halls, 0),
-    days: toNum_(it.days, 0),
-    eventDays: toNum_(it.eventDays, 0),
-    coef: toNum_(it.coef, 1),
-    unitCost: toNum_(it.unitCost, 0),
+    qty: qty,
+    halls: halls,
+    days: days,
+    eventDays: eventDays,
+    coef: coef,
+    unitCost: unitCost,
     rowSum: 0
   };
 }
 
 function calcRowSum_(row) {
-  return toNum_(row.qty,0) * toNum_(row.halls,0) * toNum_(row.days,0) * toNum_(row.eventDays,0) * toNum_(row.coef,1) * toNum_(row.unitCost,0);
+  return toNum_(row.qty,0) * toNum_(row.halls,1) * toNum_(row.days,1) * toNum_(row.eventDays,1) * toNum_(row.coef,1) * toNum_(row.unitCost,0);
 }
 
 /* =========================

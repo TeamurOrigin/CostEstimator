@@ -327,7 +327,31 @@
     var x=Number(String(v).replace(',','.'));
     return isFinite(x)?x:def;
   }
-  function blankRow(){return{article:'',qty:1,halls:1,days:1,eventDays:1,coef:1,unitCost:0,rowSum:0}}
+  function normalizeRowInput(raw){
+    var qty=num(raw.qty,0);
+    var halls=num(raw.halls,1);
+    var days=num(raw.days,1);
+    var eventDays=num(raw.eventDays,1);
+    var coef=num(raw.coef,1);
+    var unitCost=num(raw.unitCost,0);
+    if((qty>0 || unitCost>0)){
+      if(halls===0) halls=1;
+      if(days===0) days=1;
+      if(eventDays===0) eventDays=1;
+      if(coef===0) coef=1;
+    }
+    return {
+      article: String(raw.article||'').trim(),
+      qty: qty,
+      halls: halls,
+      days: days,
+      eventDays: eventDays,
+      coef: coef,
+      unitCost: unitCost,
+      rowSum: 0
+    };
+  }
+  function blankRow(){return{article:'',qty:0,halls:1,days:1,eventDays:1,coef:1,unitCost:0,rowSum:0}}
 
   function disableUI(flag){
     var card=$('itemsCard');
@@ -359,7 +383,7 @@
   }
 
   function calcRow(it){
-    return num(it.qty,0)*num(it.halls,0)*num(it.days,0)*num(it.eventDays,0)*num(it.coef,1)*num(it.unitCost,0);
+    return num(it.qty,0)*num(it.halls,1)*num(it.days,1)*num(it.eventDays,1)*num(it.coef,1)*num(it.unitCost,0);
   }
 
   function recalcTotal(){
@@ -423,9 +447,9 @@
         tdSum.textContent = money(it.rowSum||0);
 
         tdQty.inp.addEventListener('input', bindNum('qty',0,tdSum));
-        tdHalls.inp.addEventListener('input', bindNum('halls',0,tdSum));
-        tdDays.inp.addEventListener('input', bindNum('days',0,tdSum));
-        tdED.inp.addEventListener('input', bindNum('eventDays',0,tdSum));
+        tdHalls.inp.addEventListener('input', bindNum('halls',1,tdSum));
+        tdDays.inp.addEventListener('input', bindNum('days',1,tdSum));
+        tdED.inp.addEventListener('input', bindNum('eventDays',1,tdSum));
         tdCoef.inp.addEventListener('input', bindNum('coef',1,tdSum));
         tdUC.inp.addEventListener('input', bindNum('unitCost',0,tdSum));
 
@@ -473,16 +497,7 @@
     var src = arr(BOOTSTRAP.items);
     for(var i=0;i<src.length;i++){
       var x=src[i]||{};
-      items.push({
-        article: x.article || '',
-        qty: num(x.qty,0),
-        halls: num(x.halls,0),
-        days: num(x.days,0),
-        eventDays: num(x.eventDays,0),
-        coef: num(x.coef,1),
-        unitCost: num(x.unitCost,0),
-        rowSum: 0
-      });
+      items.push(normalizeRowInput(x));
     }
     if(!items.length) items.push(blankRow());
 
@@ -512,9 +527,9 @@
         payload.push({
           article:String(it.article||'').trim(),
           qty:num(it.qty,0),
-          halls:num(it.halls,0),
-          days:num(it.days,0),
-          eventDays:num(it.eventDays,0),
+          halls:num(it.halls,1),
+          days:num(it.days,1),
+          eventDays:num(it.eventDays,1),
           coef:num(it.coef,1),
           unitCost:num(it.unitCost,0)
         });
