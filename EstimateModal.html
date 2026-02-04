@@ -6,40 +6,57 @@
   <style>
     :root{--bg:#0b1220;--text:#e2e8f0;--muted:#94a3b8;--border:rgba(148,163,184,.18);--accent:#38bdf8;--green:#34d399;--red:#ef4444;--shadow:0 16px 60px rgba(0,0,0,.45);--r:14px}
     *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:radial-gradient(circle at 10% 0%,rgba(56,189,248,.10),transparent 40%),radial-gradient(circle at 90% 10%,rgba(52,211,153,.10),transparent 45%),var(--bg);color:var(--text)}
-    .wrap{padding:14px}
-    .top{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r);background:rgba(15,23,42,.90);box-shadow:var(--shadow);margin-bottom:12px}
-    .title{font-weight:900;font-size:16px}
-    .status{font-size:12px;color:var(--muted);padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:rgba(2,6,23,.35)}
-    .grid{display:grid;grid-template-columns:420px 1fr;gap:12px;min-height:620px}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:12px;line-height:1.25;background:radial-gradient(circle at 10% 0%,rgba(56,189,248,.10),transparent 40%),radial-gradient(circle at 90% 10%,rgba(52,211,153,.10),transparent 45%),var(--bg);color:var(--text)}
+    .wrap{padding:12px}
+    .top{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);background:rgba(15,23,42,.90);box-shadow:var(--shadow);margin-bottom:10px}
+    .title{font-weight:900;font-size:15px}
+    .status{font-size:11px;color:var(--muted);padding:5px 9px;border:1px solid var(--border);border-radius:999px;background:rgba(2,6,23,.35)}
+    .grid{display:grid;grid-template-columns:380px 1fr;gap:10px;min-height:600px}
     .card{border:1px solid var(--border);border-radius:var(--r);background:linear-gradient(180deg,rgba(15,23,42,.92),rgba(15,23,42,.78));box-shadow:var(--shadow);overflow:hidden}
-    .h{padding:12px 14px;border-bottom:1px solid var(--border);font-weight:900;display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(2,6,23,.18)}
-    .b{padding:12px 14px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
-    label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px}
-    .field{flex:1;min-width:140px}
-    input,select{width:100%;padding:10px 10px;border-radius:12px;border:1px solid var(--border);background:rgba(2,6,23,.35);color:var(--text);outline:none}
+    .h{padding:10px 12px;border-bottom:1px solid var(--border);font-weight:900;display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(2,6,23,.18)}
+    .b{padding:10px 12px}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+    label{display:block;font-size:11px;color:var(--muted);margin:0 0 5px}
+    .field{flex:1;min-width:130px}
+    input,select{width:100%;padding:8px 9px;border-radius:11px;border:1px solid var(--border);background:rgba(2,6,23,.35);color:var(--text);outline:none}
     input:focus,select:focus{border-color:rgba(56,189,248,.55);box-shadow:0 0 0 3px rgba(56,189,248,.12)}
-    .btn{padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:rgba(2,6,23,.35);color:var(--text);font-weight:900;cursor:pointer}
+    .btn{padding:8px 10px;border-radius:11px;border:1px solid var(--border);background:rgba(2,6,23,.35);color:var(--text);font-weight:900;cursor:pointer}
     .btn.acc{border-color:rgba(56,189,248,.45);box-shadow:0 0 0 3px rgba(56,189,248,.10)}
     .btn.green{border-color:rgba(52,211,153,.45);box-shadow:0 0 0 3px rgba(52,211,153,.10)}
     .btn.red{border-color:rgba(239,68,68,.45);box-shadow:0 0 0 3px rgba(239,68,68,.10)}
-    .xbtn{padding:7px 10px;border-radius:10px;font-weight:900}
-    table{width:100%;border-collapse:collapse;font-size:12.5px}
-    table.items th,table.items td{padding:6px 6px;text-align:center}
-    .col-article{min-width:180px}
-    .col-qty,.col-halls,.col-days,.col-event-days,.col-coef,.col-unit{min-width:64px}
-    .col-sum{min-width:80px}
-    table.items input{padding:6px 6px;text-align:center}
-    .items .left{text-align:left}
-    th,td{padding:8px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
+    .xbtn{padding:6px 9px;border-radius:10px;font-weight:900}
+    table{width:100%;border-collapse:collapse;font-size:11.5px}
+    th,td{padding:7px 7px;border-bottom:1px solid var(--border);vertical-align:middle}
     th{color:var(--muted);font-weight:900;text-align:left;background:rgba(2,6,23,.18)}
-    .pill{font-size:12px;color:var(--muted);padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:rgba(2,6,23,.25)}
-    .tools{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+    .pill{font-size:11px;color:var(--muted);padding:5px 9px;border:1px solid var(--border);border-radius:999px;background:rgba(2,6,23,.25)}
+    .tools{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
     .disabled{opacity:.55;pointer-events:none;filter:grayscale(.15)}
-    .itemsWrap{border:1px solid var(--border);border-radius:12px;overflow:auto;max-height:440px}
-    .sum{margin-top:10px;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:rgba(2,6,23,.25);font-weight:900}
-    .sum .m{font-weight:900;color:var(--muted);font-size:12px}
+    .itemsWrap{border:1px solid var(--border);border-radius:12px;overflow:auto;max-height:410px}
+    .sum{margin-top:8px;display:flex;align-items:center;justify-content:space-between;padding:9px 11px;border:1px solid var(--border);border-radius:12px;background:rgba(2,6,23,.25);font-weight:900}
+    .sum .m{font-weight:900;color:var(--muted);font-size:11px}
+
+    #leftCard .b{padding:9px 10px}
+    #leftCard .row{gap:7px}
+    #leftCard input,#leftCard select{padding:7px 8px;border-radius:10px}
+    #leftCard .btn{padding:7px 9px;border-radius:10px}
+    #leftCard table{font-size:11.25px}
+    #leftCard th,#leftCard td{padding:6px 6px}
+
+    .estActions{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+    .estActions .btn{width:100%}
+
+    table.items{table-layout:fixed}
+    table.items th,table.items td{padding:4px 3px;text-align:center}
+    table.items input{padding:4px 3px;text-align:center;border-radius:10px;font-size:11px}
+    .items .left{text-align:left}
+    table.items th{font-size:10.25px;line-height:1.05}
+    table.items th,table.items td{white-space:nowrap}
+
+    .col-article{width:150px;min-width:150px;max-width:150px}
+    .col-num{width:52px;min-width:52px;max-width:52px}
+    .col-sum{width:80px;min-width:80px;max-width:80px}
+    .col-x{width:44px;min-width:44px;max-width:44px}
+    table.items td:first-child input{text-align:left}
   </style>
 </head>
 <body>
@@ -50,31 +67,31 @@
     </div>
 
     <div class="grid">
-      <div class="card">
+      <div class="card" id="leftCard">
         <div class="h">Сметы</div>
         <div class="b">
           <div class="row">
-            <div class="field" style="min-width:210px">
+            <div class="field" style="min-width:200px">
               <label>Название</label>
               <input id="newName">
             </div>
-            <div class="field" style="min-width:160px">
+            <div class="field" style="min-width:150px">
               <label>Категория</label>
               <select id="newCategory"></select>
             </div>
             <button class="btn acc" id="btnCreate">Создать</button>
           </div>
 
-          <div style="height:10px"></div>
+          <div style="height:8px"></div>
 
           <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;">
             <table>
               <thead>
                 <tr>
-                  <th style="width:42%">Название</th>
-                  <th style="width:22%">Категория</th>
-                  <th style="width:12%">Статей</th>
-                  <th style="width:14%">Сумма</th>
+                  <th style="width:44%">Название</th>
+                  <th style="width:24%">Категория</th>
+                  <th style="width:10%">Статей</th>
+                  <th style="width:12%">Сумма</th>
                   <th style="width:10%">Действия</th>
                 </tr>
               </thead>
@@ -88,7 +105,7 @@
         <div class="h">
           <div>
             <div id="curTitle">Позиции</div>
-            <div style="color:var(--muted);font-size:12px" id="curSub">Сначала создайте или откройте смету</div>
+            <div style="color:var(--muted);font-size:11px" id="curSub">Сначала создайте или откройте смету</div>
           </div>
           <div class="tools">
             <span class="pill" id="curMeta">—</span>
@@ -104,21 +121,21 @@
             <button class="btn acc" id="btnSave">Сохранить</button>
           </div>
 
-          <div style="height:10px"></div>
+          <div style="height:8px"></div>
 
           <div class="itemsWrap">
             <table class="items">
               <thead>
                 <tr>
                   <th class="col-article left">Статья</th>
-                  <th class="col-qty">Кол-во</th>
-                  <th class="col-halls">Залов</th>
-                  <th class="col-days">Дней</th>
-                  <th class="col-event-days">Дней мероприятий</th>
-                  <th class="col-coef">Коэф.</th>
-                  <th class="col-unit">Стоимость<br>за ед.</th>
+                  <th class="col-num">Кол-во</th>
+                  <th class="col-num">Залов</th>
+                  <th class="col-num">Дней</th>
+                  <th class="col-num">Дней<br>мер.</th>
+                  <th class="col-num">Коэф.</th>
+                  <th class="col-num">Цена<br>ед.</th>
                   <th class="col-sum">Сумма</th>
-                  <th style="min-width:60px"></th>
+                  <th class="col-x"></th>
                 </tr>
               </thead>
               <tbody id="itemsBody"></tbody>
@@ -144,7 +161,44 @@
   function blankRow(){return{article:'',qty:1,halls:1,days:1,eventDays:1,coef:1,unitCost:0,rowSum:0}}
   function lockRight(disabled){var c=$('rightCard');if(disabled)c.classList.add('disabled');else c.classList.remove('disabled')}
   function fillCategories(){var sel=$('newCategory');sel.innerHTML='';var cats=arr(boot&&boot.categories);for(var i=0;i<cats.length;i++){var o=document.createElement('option');o.value=cats[i];o.textContent=cats[i];sel.appendChild(o)}}
-  function renderEstimates(){var body=$('estBody');body.innerHTML='';var list=arr(boot&&boot.estimates);if(!list.length){var tr=document.createElement('tr');var td=document.createElement('td');td.colSpan=5;td.style.padding='12px 10px';td.style.color='var(--muted)';td.style.fontSize='12px';td.textContent='Смет пока нет';tr.appendChild(td);body.appendChild(tr);return}for(var i=0;i<list.length;i++){var e=list[i];var tr=document.createElement('tr');var td1=document.createElement('td');td1.textContent=e.name||'';var td2=document.createElement('td');td2.textContent=e.category||'';var td3=document.createElement('td');td3.textContent=String(Number(e.itemsCount||0));var td4=document.createElement('td');td4.textContent=money(e.totalSum||0);var td5=document.createElement('td');var box=document.createElement('div');box.style.display='flex';box.style.gap='8px';var bOpen=document.createElement('button');bOpen.className='btn acc xbtn';bOpen.textContent='Открыть';bOpen.dataset.id=e.id;bOpen.addEventListener('click',function(ev){openEstimate(ev.currentTarget.dataset.id)});var bDel=document.createElement('button');bDel.className='btn red xbtn';bDel.textContent='Удалить';bDel.dataset.id=e.id;bDel.addEventListener('click',function(ev){delEstimate(ev.currentTarget.dataset.id)});box.appendChild(bOpen);box.appendChild(bDel);td5.appendChild(box);tr.appendChild(td1);tr.appendChild(td2);tr.appendChild(td3);tr.appendChild(td4);tr.appendChild(td5);body.appendChild(tr)}}
+  function renderEstimates(){
+    var body=$('estBody');body.innerHTML='';
+    var list=arr(boot&&boot.estimates);
+    if(!list.length){
+      var tr=document.createElement('tr');
+      var td=document.createElement('td');
+      td.colSpan=5;td.style.padding='10px 8px';td.style.color='var(--muted)';td.style.fontSize='11px';
+      td.textContent='Смет пока нет';
+      tr.appendChild(td);body.appendChild(tr);
+      return;
+    }
+    for(var i=0;i<list.length;i++){
+      var e=list[i];
+      var tr=document.createElement('tr');
+
+      var td1=document.createElement('td');td1.textContent=e.name||'';
+      var td2=document.createElement('td');td2.textContent=e.category||'';
+      var td3=document.createElement('td');td3.textContent=String(Number(e.itemsCount||0));
+      var td4=document.createElement('td');td4.textContent=money(e.totalSum||0);
+
+      var td5=document.createElement('td');
+      var box=document.createElement('div');box.className='estActions';
+
+      var bOpen=document.createElement('button');
+      bOpen.className='btn acc xbtn';bOpen.textContent='Открыть';bOpen.dataset.id=e.id;
+      bOpen.addEventListener('click',function(ev){openEstimate(ev.currentTarget.dataset.id)});
+
+      var bDel=document.createElement('button');
+      bDel.className='btn red xbtn';bDel.textContent='Удалить';bDel.dataset.id=e.id;
+      bDel.addEventListener('click',function(ev){delEstimate(ev.currentTarget.dataset.id)});
+
+      box.appendChild(bOpen);box.appendChild(bDel);
+      td5.appendChild(box);
+
+      tr.appendChild(td1);tr.appendChild(td2);tr.appendChild(td3);tr.appendChild(td4);tr.appendChild(td5);
+      body.appendChild(tr);
+    }
+  }
   function setRightHeader(est){if(!est){$('curTitle').textContent='Позиции';$('curSub').textContent='Сначала создайте или откройте смету';$('curMeta').textContent='—';return}$('curTitle').textContent=est.name||'';$('curSub').textContent='Категория: '+(est.category||'');$('curMeta').textContent='Статей: '+String(est.itemsCount||0)+' • Сумма: '+money(est.totalSum||0)}
   function buildArticleDatalist(category){var dl=$('articleOptions');dl.innerHTML='';var m=(boot&&boot.articlesByCategory)?boot.articlesByCategory:{};var list=arr(m&&m[category]);for(var i=0;i<list.length;i++){var o=document.createElement('option');o.value=list[i];dl.appendChild(o)}}
   function recalc(){var total=0;for(var i=0;i<items.length;i++){var it=items[i];var rowSum=num(it.qty,0)*num(it.halls,0)*num(it.days,0)*num(it.eventDays,0)*num(it.coef,1)*num(it.unitCost,0);it.rowSum=rowSum;total+=rowSum}$('totalSum').textContent=money(total)}
