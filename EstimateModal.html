@@ -269,22 +269,32 @@
         bEdit.className='btn mini acc';
         bEdit.textContent='Ред.';
         bEdit.addEventListener('click', function(){
+          var entryId = e.id || e.entryId;
+          if (!entryId) { setStatus('Запись сметы не найдена.'); return; }
           setStatus('Открываю…');
           google.script.run
             .withSuccessHandler(function(){ google.script.host.close(); })
             .withFailureHandler(function(err){ setStatus(String(err&&err.message?err.message:err)); })
-            .openEntryItems(e.id);
+            .openEntryItems(entryId);
         });
 
         var bDup=document.createElement('button');
         bDup.className='btn mini green';
         bDup.textContent='Дубл.';
-        bDup.addEventListener('click', function(){ duplicateEntry(e.id); });
+        bDup.addEventListener('click', function(){
+          var entryId = e.id || e.entryId;
+          if (!entryId) { setStatus('Запись сметы не найдена.'); return; }
+          duplicateEntry(entryId);
+        });
 
         var bDel=document.createElement('button');
         bDel.className='btn mini red';
         bDel.textContent='Удал.';
-        bDel.addEventListener('click', function(){ deleteEntry(e.id); });
+        bDel.addEventListener('click', function(){
+          var entryId = e.id || e.entryId;
+          if (!entryId) { setStatus('Запись сметы не найдена.'); return; }
+          deleteEntry(entryId);
+        });
 
         box.appendChild(bEdit);
         box.appendChild(bDup);
