@@ -159,6 +159,7 @@
   var currentProject=null;
   var items=[];
   var positionsByCategory={};
+  var allPositions=[];
   var currentCommentIdx=-1;
 
   function $(id){return document.getElementById(id)}
@@ -170,8 +171,10 @@
 
   function positionList_(){
     var cat = current && current.category ? String(current.category).trim() : '';
-    var list = (positionsByCategory && cat && positionsByCategory[cat]) ? arr(positionsByCategory[cat]) : [];
-    return list;
+    if (positionsByCategory && cat && positionsByCategory[cat]) {
+      return arr(positionsByCategory[cat]);
+    }
+    return arr(allPositions);
   }
 
   function fillSelect_(sel, list, placeholder){
@@ -203,7 +206,7 @@
 
   function updateHint_(){
     var cat = current && current.category ? String(current.category) : '';
-    $('posHint').textContent = cat ? ('Список позиций берётся из “Справочник сметы” и фильтруется по категории: “' + cat + '”.') : 'Список позиций берётся из “Справочник сметы”.';
+    $('posHint').textContent = cat ? ('Список позиций берётся из “Справочник сметы” и фильтруется по категории: “' + cat + '”.') : 'Список позиций берётся из “Справочник сметы” (столбец B).';
   }
 
   function rowSum_(it){
@@ -420,6 +423,22 @@
         currentProject = res.project || null;
         current = res.entry || null;
         positionsByCategory = res.positionsByCategory || {};
+        allPositions = [];
+        for (var key in positionsByCategory) {
+          if (Object.prototype.hasOwnProperty.call(positionsByCategory, key)) {
+            allPositions = allPositions.concat(arr(positionsByCategory[key]));
+          }
+        }
+        var seen = {};
+        var uniq = [];
+        for (var j = 0; j < allPositions.length; j++) {
+          var val = String(allPositions[j] || '').trim();
+          if (!val || seen[val]) continue;
+          seen[val] = true;
+          uniq.push(val);
+        }
+        uniq.sort(function(a, b) { return a.localeCompare(b, 'ru'); });
+        allPositions = uniq;
         items=[];
 
         var src = arr(res.items);
@@ -451,6 +470,8 @@
       .withFailureHandler(function(e){
         current=null;
         items=[];
+        positionsByCategory={};
+        allPositions=[];
         fillSelect_($('newPosition'), [], '—');
         updateTotal_();
         updateHeader_();
