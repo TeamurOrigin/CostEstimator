@@ -330,7 +330,7 @@
           <div class="gridR">
             <div>
               <label>Тип</label>
-              <select id="newType"></select>
+              <div id="newTypeMount"></div>
             </div>
             <div>
               <label>Группа</label>
@@ -338,7 +338,7 @@
             </div>
             <div>
               <label>Категория</label>
-              <select id="newCategory"></select>
+              <div id="newCategoryMount"></div>
             </div>
             <button class="btn green" id="btnCreateEntry">Новая запись</button>
           </div>
@@ -381,6 +381,8 @@
   var entries=[];
   var PROJECT_TARIFFS=['Фиксированный','Тарифный','Обычный','Процентный'];
   var tariffDD=null;
+  var typeDD=null;
+  var categoryDD=null;
 
   function $(id){return document.getElementById(id)}
   function setStatus(t){$('status').textContent=t}
@@ -528,6 +530,24 @@
     mount.innerHTML='';
     tariffDD = createDropdown(PROJECT_TARIFFS, 'Обычный', function(){});
     mount.appendChild(tariffDD.btn);
+  }
+
+  function initEntryDropdowns(types, categories){
+    var typeMount = $('newTypeMount');
+    var categoryMount = $('newCategoryMount');
+    var currentType = typeDD && typeDD.getValue ? typeDD.getValue() : '';
+    var currentCategory = categoryDD && categoryDD.getValue ? categoryDD.getValue() : '';
+    var typeList = arr(types);
+    var categoryList = arr(categories);
+
+    typeMount.innerHTML = '';
+    categoryMount.innerHTML = '';
+
+    typeDD = createDropdown(typeList, (typeList.indexOf(currentType) !== -1 ? currentType : typeList[0]), function(){});
+    categoryDD = createDropdown(categoryList, (categoryList.indexOf(currentCategory) !== -1 ? currentCategory : categoryList[0]), function(){});
+
+    typeMount.appendChild(typeDD.btn);
+    categoryMount.appendChild(categoryDD.btn);
   }
 
   /* =========================
@@ -705,8 +725,7 @@
     callGs(btn,'Загрузка…','getBootstrapData',[],function(data){
       boot=data;
 
-      fillSelect($('newType'), arr(boot.types));
-      fillSelect($('newCategory'), arr(boot.categories));
+      initEntryDropdowns(arr(boot.types), arr(boot.categories));
 
       renderProjects();
 
@@ -770,9 +789,9 @@
 
   function createEntry(btn){
     if(!selectedProjectId){ setStatus('Сначала выберите проект'); return; }
-    var type=$('newType').value.trim();
+    var type=(typeDD && typeDD.getValue ? typeDD.getValue().trim() : '');
     var group=$('newGroup').value.trim();
-    var category=$('newCategory').value.trim();
+    var category=(categoryDD && categoryDD.getValue ? categoryDD.getValue().trim() : '');
     if(!type){ setStatus('Укажите тип'); return; }
     if(!category){ setStatus('Укажите категорию'); return; }
 
