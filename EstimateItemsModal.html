@@ -4,430 +4,478 @@
   <base target="_top">
   <meta charset="UTF-8">
   <style>
-    :root{
-      --bg:#ffffff;
-      --text:#111827;
-      --muted:#4b5563;
-      --border:#000000;
-      --header:#3b3b3b;
-      --headerText:#ffffff;
-      --accent:#3cc4c8;
-      --accentDark:#2aa7ab;
-      --danger:#e63b3b;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family:Arial,Helvetica,sans-serif;
-      font-size:12px;
-      color:var(--text);
-      background:var(--bg);
-    }
-    .wrap{
-      height:100%;
-      padding:10px;
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      border:2px solid var(--border);
-    }
-    .topBar{
-      display:flex;
-      gap:6px;
-      align-items:center;
-    }
-    .topBar .tab{
-      background:var(--accent);
-      color:#fff;
-      font-weight:700;
-      border:none;
-      padding:4px 12px;
-      height:22px;
-      cursor:pointer;
-    }
-    .topBar .tab:active{transform:translateY(1px)}
-    .sectionTitle{
-      background:var(--header);
-      color:var(--headerText);
-      font-weight:700;
-      padding:3px 8px;
-      width:140px;
-    }
-    .metaRow{
-      display:grid;
-      grid-template-columns:220px 180px 180px 180px;
-      gap:8px;
-      margin:6px 0;
-    }
-    .metaBox{
-      border:2px solid var(--border);
-      padding:4px 6px;
-      text-align:center;
-    }
-    .status{
-      font-size:11px;
-      color:var(--muted);
-      margin-left:auto;
-    }
-    .rowTools{
-      display:flex;
-      gap:6px;
-      margin-bottom:4px;
-    }
-    .btn{
-      background:var(--accent);
-      color:#fff;
-      border:none;
-      height:22px;
-      font-weight:700;
-      cursor:pointer;
-      padding:0 10px;
-    }
-    .btn:active{transform:translateY(1px)}
-    .btn.danger{background:var(--danger)}
+    :root{--bg:#070d18;--panel:rgba(15,23,42,.72);--panel2:rgba(2,6,23,.42);--text:#e7eefc;--muted:#95a6c7;--border:rgba(148,163,184,.16);--border2:rgba(148,163,184,.10);--accent:#38bdf8;--green:#34d399;--red:#ef4444;--shadow:0 18px 70px rgba(0,0,0,.55);--shadow2:0 10px 28px rgba(0,0,0,.35);--r:16px}
+    *{box-sizing:border-box}html,body{height:100%}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:12px;line-height:1.25;color:var(--text);
+      background:radial-gradient(900px 420px at 12% -10%, rgba(56,189,248,.16), transparent 55%),
+                 radial-gradient(900px 420px at 88% 0%, rgba(52,211,153,.13), transparent 55%),
+                 radial-gradient(900px 520px at 50% 110%, rgba(99,102,241,.10), transparent 55%),
+                 linear-gradient(180deg,#060b16 0%,#040816 100%)}
 
-    .tableWrap{
-      border:2px solid var(--border);
-      flex:1 1 auto;
-      overflow:auto;
-    }
-    table{
-      width:100%;
-      border-collapse:collapse;
-      table-layout:fixed;
-    }
-    th,td{
-      border:2px solid var(--border);
-      padding:4px 6px;
-      text-align:center;
-    }
-    th{
-      background:var(--header);
-      color:var(--headerText);
-      font-weight:700;
-    }
-    .cellSelect{
-      width:100%;
-      height:22px;
-      border:1px solid var(--border);
-      font-size:12px;
-      padding:2px 4px;
-      background:#fff;
-    }
-    .modalOverlay{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,.35);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      z-index:20;
-    }
-    .modalOverlay.show{display:flex}
-    .commentModal{
-      width:420px;
-      max-width:90vw;
-      border:2px solid var(--border);
-      background:#fff;
-      padding:12px;
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-    }
-    .commentModal h3{margin:0;font-size:13px}
-    .commentModal textarea{
-      min-height:100px;
-      resize:vertical;
-      border:1px solid var(--border);
-      padding:6px;
-      font-size:12px;
-    }
-    .commentModal .actions{
-      display:flex;
-      gap:6px;
-      justify-content:flex-end;
-    }
+    .wrap{padding:14px}
+    .top{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r);
+      background:linear-gradient(180deg, rgba(15,23,42,.82), rgba(15,23,42,.62));box-shadow:var(--shadow);margin-bottom:12px;position:relative;overflow:hidden}
+    .top:before{content:"";position:absolute;inset:-2px;background:radial-gradient(600px 140px at 18% 0%, rgba(56,189,248,.18), transparent 60%),
+                                              radial-gradient(600px 160px at 86% 0%, rgba(52,211,153,.14), transparent 60%);pointer-events:none;opacity:.9}
+    .top>*{position:relative;z-index:1}
+    .title{font-weight:950;font-size:15px;letter-spacing:.2px}
+    .status{font-size:11px;color:var(--muted);padding:6px 10px;border:1px solid var(--border2);border-radius:999px;background:rgba(2,6,23,.40);box-shadow:inset 0 1px 0 rgba(255,255,255,.04);white-space:nowrap}
+
+    .card{border:1px solid var(--border);border-radius:var(--r);background:linear-gradient(180deg, rgba(15,23,42,.76), rgba(2,6,23,.44));box-shadow:var(--shadow2);overflow:hidden;position:relative}
+    .card:before{content:"";position:absolute;inset:0;background:radial-gradient(800px 220px at 22% 0%, rgba(56,189,248,.10), transparent 55%),
+                                              radial-gradient(800px 220px at 82% 0%, rgba(52,211,153,.08), transparent 55%);pointer-events:none;opacity:.9}
+    .card>*{position:relative;z-index:1}
+
+    .h{padding:12px 14px;border-bottom:1px solid var(--border2);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:linear-gradient(180deg, rgba(2,6,23,.32), rgba(2,6,23,.12))}
+    .h .left .t{font-weight:950}
+    .h .left .s{color:rgba(149,166,199,.85);font-size:11px;margin-top:2px}
+    .tools{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+    .pill{font-size:11px;color:var(--muted);padding:6px 10px;border:1px solid var(--border2);border-radius:999px;background:rgba(2,6,23,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.04);white-space:nowrap}
+
+    .btn{height:34px;padding:0 12px;border-radius:12px;border:1px solid var(--border2);background:linear-gradient(180deg, rgba(2,6,23,.55), rgba(2,6,23,.35));color:var(--text);font-weight:950;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);transition:transform .12s ease,filter .12s ease;white-space:nowrap}
+    .btn:hover{transform:translateY(-1px);filter:brightness(1.06)}.btn:active{transform:translateY(0)}
+    .btn.acc{border-color:rgba(56,189,248,.45);box-shadow:0 0 0 3px rgba(56,189,248,.08), inset 0 1px 0 rgba(255,255,255,.05)}
+    .btn.green{border-color:rgba(52,211,153,.45);box-shadow:0 0 0 3px rgba(52,211,153,.08), inset 0 1px 0 rgba(255,255,255,.05)}
+    .btn.red{border-color:rgba(239,68,68,.45);box-shadow:0 0 0 3px rgba(239,68,68,.08), inset 0 1px 0 rgba(255,255,255,.05)}
+    .mini{height:30px;border-radius:11px}
+
+    .b{padding:12px 14px}
+
+    label{display:block;font-size:11px;color:var(--muted);margin:0 0 6px}
+    select,input,textarea{width:100%;border-radius:12px;border:1px solid var(--border2);background:rgba(2,6,23,.44);color:var(--text);outline:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.035);transition:box-shadow .12s ease,border-color .12s ease,background .12s ease}
+    select,input{height:34px;padding:8px 10px}
+    textarea{min-height:160px;padding:10px 12px;resize:vertical}
+    select:focus,input:focus,textarea:focus{border-color:rgba(56,189,248,.55);box-shadow:0 0 0 3px rgba(56,189,248,.12), inset 0 1px 0 rgba(255,255,255,.04);background:rgba(2,6,23,.50)}
+
+    .addGrid{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-bottom:8px}
+    .note{color:rgba(149,166,199,.85);font-size:11px;margin:0 0 10px}
+
+    .itemsWrap{border:1px solid var(--border2);border-radius:14px;overflow:auto;max-height:460px;background:rgba(2,6,23,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+    table{width:100%;border-collapse:separate;border-spacing:0;font-size:11.25px;table-layout:fixed}
+    th,td{padding:7px 6px;border-bottom:1px solid rgba(148,163,184,.09);vertical-align:middle}
+    th{color:rgba(149,166,199,.85);font-weight:950;text-align:center;background:rgba(2,6,23,.28);position:sticky;top:0;z-index:2;box-shadow:inset 0 -1px 0 rgba(148,163,184,.08);font-size:10.5px;line-height:1.05}
+    td{text-align:center;white-space:nowrap}
+    td.pos{text-align:left;padding-left:10px}
+    td.sum{text-align:right;font-weight:950;padding-right:10px}
+    td input{height:28px;padding:4px 8px;font-size:11px;border-radius:999px;text-align:center}
+    td.pos select{height:28px;padding:4px 10px;font-size:11px;border-radius:12px;width:100%;text-align:left}
+
+    .col-pos{width:360px}.col-num{width:70px}.col-sum{width:120px}.col-comm{width:120px}.col-x{width:54px}
+
+    .sumBar{margin-top:10px;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border2);border-radius:14px;background:linear-gradient(180deg, rgba(2,6,23,.34), rgba(2,6,23,.22));font-weight:950;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+    .sumBar .m{font-weight:950;color:rgba(149,166,199,.85);font-size:11px}
+
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:14px}
+    .overlay.show{display:flex}
+    .modal{width:min(720px, 100%);border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg, rgba(15,23,42,.92), rgba(2,6,23,.66));box-shadow:0 24px 80px rgba(0,0,0,.65);overflow:hidden;position:relative}
+    .modal:before{content:"";position:absolute;inset:0;background:radial-gradient(800px 220px at 22% 0%, rgba(56,189,248,.12), transparent 55%),
+                                              radial-gradient(800px 220px at 82% 0%, rgba(52,211,153,.10), transparent 55%);pointer-events:none;opacity:.95}
+    .modal>*{position:relative;z-index:1}
+    .mh{padding:12px 14px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:950}
+    .mb{padding:12px 14px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end;margin-top:10px}
   </style>
 </head>
+
 <body>
   <div class="wrap">
-    <div class="topBar">
-      <button class="tab" id="btnAddRow">Добавить позицию</button>
-      <button class="tab" id="btnSave">Сохранить</button>
-      <button class="tab" id="btnBack">К проектам</button>
-      <button class="tab" id="btnOpenSheet">Выгрузить на лист</button>
+    <div class="top">
+      <div class="title">Позиции сметы</div>
       <div class="status" id="status">Загрузка…</div>
     </div>
 
-    <div class="sectionTitle">Проекты</div>
+    <div class="card">
+      <div class="h">
+        <div class="left">
+          <div class="t" id="hdrTitle">—</div>
+          <div class="s" id="hdrSub">—</div>
+        </div>
+        <div class="tools">
+          <span class="pill" id="hdrMeta">—</span>
+          <button class="btn mini" id="btnBack">К проектам</button>
+          <button class="btn acc mini" id="btnSave">Сохранить</button>
+        </div>
+      </div>
 
-    <div class="metaRow">
-      <div class="metaBox" id="metaProject">—</div>
-      <div class="metaBox" id="metaType">—</div>
-      <div class="metaBox" id="metaGroup">—</div>
-      <div class="metaBox" id="metaCategory">—</div>
-    </div>
+      <div class="b">
+        <div class="addGrid">
+          <div>
+            <label>Позиция</label>
+            <select id="newPosition"></select>
+          </div>
+          <button class="btn green" id="btnAdd">Добавить позицию</button>
+        </div>
+        <div class="note" id="posHint">—</div>
 
-    <div class="tableWrap">
-      <table>
-        <colgroup>
-          <col style="width:30%">
-          <col style="width:35%">
-          <col style="width:20%">
-          <col style="width:15%">
-        </colgroup>
-        <thead>
-          <tr>
-            <th>Категория</th>
-            <th>Позиция</th>
-            <th>Комментарий</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="itemsBody"></tbody>
-      </table>
+        <div class="itemsWrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-pos" style="text-align:left;padding-left:10px">Позиция</th>
+                <th class="col-num">Кол-во</th>
+                <th class="col-num">Залов</th>
+                <th class="col-num">Дней</th>
+                <th class="col-num">Дней<br>мер.</th>
+                <th class="col-num">Коэф.</th>
+                <th class="col-num">Стоимость<br>за ед.</th>
+                <th class="col-sum">Итого</th>
+                <th class="col-comm">Комментарий</th>
+                <th class="col-x"></th>
+              </tr>
+            </thead>
+            <tbody id="itemsBody"></tbody>
+          </table>
+        </div>
+
+        <div class="sumBar">
+          <div class="m">Итого</div>
+          <div id="totalSum">0.00</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="modalOverlay" id="commentOverlay">
-    <div class="commentModal">
-      <h3>Комментарий к позиции</h3>
-      <div id="commentMeta">—</div>
-      <textarea id="commentInput" placeholder="Введите комментарий"></textarea>
-      <div class="actions">
-        <button class="btn" id="commentCancel">Отмена</button>
-        <button class="btn" id="commentSave">Сохранить</button>
+  <div class="overlay" id="cOverlay" aria-hidden="true">
+    <div class="modal">
+      <div class="mh">
+        <div>Комментарий</div>
+        <button class="btn mini" id="cClose">Закрыть</button>
+      </div>
+      <div class="mb">
+        <label id="cHint">Комментарий</label>
+        <textarea id="cText" placeholder="Введите комментарий…" spellcheck="false"></textarea>
+        <div class="row">
+          <button class="btn" id="cClear">Очистить</button>
+          <button class="btn acc" id="cSave">Сохранить</button>
+        </div>
       </div>
     </div>
   </div>
 
 <script>
-  var BOOTSTRAP = <?!= JSON.stringify(bootstrap || null) ?>;
+  var estimateId = <?= JSON.stringify(estimateId) ?>;
 
-  var current = null;
-  var items = [];
-  var positionsByCategory = {};
-  var positionsAll = [];
-  var categories = [];
-  var commentIdx = null;
+  var current=null;
+  var items=[];
+  var articlesByCategory={};
+  var currentCommentIdx=-1;
 
   function $(id){return document.getElementById(id)}
+  function stripErr_(m){m=String(m||'');m=m.replace(/^Error:\s*/,'').replace(/^Error:\s*/,'');return m.trim()}
   function setStatus(t){$('status').textContent=t}
   function arr(a){return a&&a.length?a:[]}
+  function money(n){var x=Number(n||0);return x.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})}
+  function num(v,def){if(def===undefined)def=0;if(v===null||v===undefined||v==='')return def;var x=Number(String(v).replace(',','.'));return isFinite(x)?x:def}
 
-  function blankRow(){return{category:'',position:'',comment:''}}
-
-  function setHeader(est){
-    if(!est){
-      $('metaProject').textContent='—';
-      $('metaType').textContent='—';
-      $('metaGroup').textContent='—';
-      $('metaCategory').textContent='—';
-      return;
-    }
-    $('metaProject').textContent=est.name||'';
-    $('metaType').textContent=est.type||'';
-    $('metaGroup').textContent=est.group||'';
-    $('metaCategory').textContent='Категория';
+  function articleList_(){
+    var cat = current && current.category ? String(current.category).trim() : '';
+    var list = (articlesByCategory && cat && articlesByCategory[cat]) ? arr(articlesByCategory[cat]) : [];
+    return list;
   }
 
-  function fillSelect(select, list, currentValue){
-    select.innerHTML='';
-    var emptyOpt=document.createElement('option');
-    emptyOpt.value='';
-    emptyOpt.textContent='—';
-    select.appendChild(emptyOpt);
+  function fillSelect_(sel, list, placeholder){
+    sel.innerHTML='';
+    if(placeholder){
+      var p=document.createElement('option');
+      p.value='';p.textContent=placeholder;
+      sel.appendChild(p);
+    }
     for(var i=0;i<list.length;i++){
       var o=document.createElement('option');
-      o.value=list[i];
-      o.textContent=list[i];
-      select.appendChild(o);
+      o.value=list[i];o.textContent=list[i];
+      sel.appendChild(o);
     }
-    select.value=currentValue || '';
   }
 
-  function renderItems(){
-    var body=$('itemsBody'); body.innerHTML='';
-    if(!current) return;
+  function updateHeader_(){
+    if(!current){
+      $('hdrTitle').textContent='Ошибка';
+      $('hdrSub').textContent='Смета не найдена';
+      $('hdrMeta').textContent='—';
+      return;
+    }
+    var t = current.type ? (' • ' + current.type) : '';
+    $('hdrTitle').textContent = (current.name || '—') + t;
+    $('hdrSub').textContent = 'Категория: ' + (current.category || '—');
+    $('hdrMeta').textContent = 'Позиции: ' + items.length + ' • Сумма: ' + $('totalSum').textContent;
+  }
 
+  function updateHint_(){
+    var cat = current && current.category ? String(current.category) : '';
+    $('posHint').textContent = cat ? ('Список позиций берётся из “Справочник сметы” и фильтруется по категории: “' + cat + '”.') : 'Список позиций берётся из “Справочник сметы”.';
+  }
+
+  function rowSum_(it){
+    return num(it.qty,0)*num(it.halls,0)*num(it.days,0)*num(it.eventDays,0)*num(it.coef,1)*num(it.unitCost,0);
+  }
+
+  function updateTotal_(){
+    var total=0;
     for(var i=0;i<items.length;i++){
+      items[i].rowSum=rowSum_(items[i]);
+      total+=items[i].rowSum;
+    }
+    $('totalSum').textContent=money(total);
+    if(current) $('hdrMeta').textContent='Позиции: '+items.length+' • Сумма: '+money(total);
+  }
+
+  function openComment(idx){
+    currentCommentIdx=idx;
+    var it=items[idx]||{};
+    $('cHint').textContent='Комментарий для: '+String(it.article||'позиции');
+    $('cText').value=String(it.comment||'');
+    $('cOverlay').classList.add('show');
+    $('cOverlay').setAttribute('aria-hidden','false');
+    $('cText').focus();
+  }
+  function closeComment(){
+    $('cOverlay').classList.remove('show');
+    $('cOverlay').setAttribute('aria-hidden','true');
+    currentCommentIdx=-1;
+  }
+  function saveComment(){
+    if(currentCommentIdx<0) return;
+    items[currentCommentIdx].comment=$('cText').value||'';
+    closeComment();
+    setStatus('Комментарий сохранён');
+  }
+
+  function render_(){
+    var body=$('itemsBody');
+    body.innerHTML='';
+
+    if(!current){
+      var tr=document.createElement('tr');
+      var td=document.createElement('td');
+      td.colSpan=10;
+      td.style.padding='12px 10px';
+      td.style.color='rgba(149,166,199,.85)';
+      td.style.textAlign='left';
+      td.textContent='Нет данных сметы.';
+      tr.appendChild(td);
+      body.appendChild(tr);
+      return;
+    }
+
+    if(!items.length){
+      var tr0=document.createElement('tr');
+      var td0=document.createElement('td');
+      td0.colSpan=10;
+      td0.style.padding='12px 10px';
+      td0.style.color='rgba(149,166,199,.85)';
+      td0.style.textAlign='left';
+      td0.textContent='Позиции пока не добавлены';
+      tr0.appendChild(td0);
+      body.appendChild(tr0);
+      return;
+    }
+
+    var opts = articleList_();
+
+    for(var idx=0; idx<items.length; idx++){
       (function(idx){
-        var it=items[idx];
+        var it=items[idx]||{};
         var tr=document.createElement('tr');
 
-        var tdCat=document.createElement('td');
-        var selCat=document.createElement('select');
-        selCat.className='cellSelect';
-        fillSelect(selCat, categories, it.category);
-        selCat.addEventListener('change', function(){
-          items[idx].category = selCat.value;
-          if(items[idx].position){
-            var allowed = arr(positionsByCategory[selCat.value]);
-            if(selCat.value && allowed.indexOf(items[idx].position) === -1){
-              items[idx].position = '';
-            }
+        var tdPos=document.createElement('td');tdPos.className='pos';
+        var sel=document.createElement('select');
+
+        // placeholder
+        var ph=document.createElement('option');ph.value='';ph.textContent='— выберите позицию —';
+        sel.appendChild(ph);
+
+        // если текущая позиция не в списке — добавим сверху
+        if(it.article){
+          var exists=false;
+          for(var q=0;q<opts.length;q++){ if(opts[q]===it.article){ exists=true; break; } }
+          if(!exists){
+            var oX=document.createElement('option');oX.value=it.article;oX.textContent=it.article;
+            sel.appendChild(oX);
           }
-          renderItems();
-        });
-        tdCat.appendChild(selCat);
+        }
 
-        var tdPos=document.createElement('td');
-        var selPos=document.createElement('select');
-        selPos.className='cellSelect';
-        var list = selCat.value ? arr(positionsByCategory[selCat.value]) : positionsAll;
-        fillSelect(selPos, list, it.position);
-        selPos.addEventListener('change', function(){
-          items[idx].position = selPos.value;
-        });
-        tdPos.appendChild(selPos);
+        for(var i=0;i<opts.length;i++){
+          var o=document.createElement('option');o.value=opts[i];o.textContent=opts[i];
+          sel.appendChild(o);
+        }
 
-        var tdCom=document.createElement('td');
-        var btn=document.createElement('button');
-        btn.className='btn';
-        btn.textContent=it.comment ? 'Изменить' : 'Добавить';
-        btn.addEventListener('click', function(){
-          openCommentModal(idx);
+        sel.value = it.article || '';
+        sel.addEventListener('change', function(e){
+          items[idx].article=e.target.value;
+          setStatus('Обновлено');
         });
-        tdCom.appendChild(btn);
+        tdPos.appendChild(sel);
+        tr.appendChild(tdPos);
+
+        function cellNum(val, oninput){
+          var td=document.createElement('td');
+          var inp=document.createElement('input');
+          inp.value=(val===undefined||val===null)?'':String(val);
+          inp.addEventListener('input', oninput);
+          td.appendChild(inp);
+          return td;
+        }
+
+        var tdSum=document.createElement('td');tdSum.className='sum';
+        tdSum.textContent=money(it.rowSum||0);
+
+        function bind(field, def){
+          return function(e){
+            items[idx][field]=num(e.target.value, def);
+            var s=rowSum_(items[idx]);
+            items[idx].rowSum=s;
+            tdSum.textContent=money(s);
+            updateTotal_();
+          };
+        }
+
+        tr.appendChild(cellNum(it.qty, bind('qty',0)));
+        tr.appendChild(cellNum(it.halls, bind('halls',0)));
+        tr.appendChild(cellNum(it.days, bind('days',0)));
+        tr.appendChild(cellNum(it.eventDays, bind('eventDays',0)));
+        tr.appendChild(cellNum(it.coef, bind('coef',1)));
+        tr.appendChild(cellNum(it.unitCost, bind('unitCost',0)));
+
+        tr.appendChild(tdSum);
+
+        var tdC=document.createElement('td');
+        var bC=document.createElement('button');
+        bC.className='btn mini';
+        bC.textContent='Изменить';
+        bC.addEventListener('click', function(){ openComment(idx); });
+        tdC.appendChild(bC);
+        tr.appendChild(tdC);
 
         var tdX=document.createElement('td');
         var bx=document.createElement('button');
-        bx.className='btn danger';
-        bx.textContent='Удалить';
+        bx.className='btn mini red';
+        bx.textContent='×';
         bx.addEventListener('click', function(){
           items.splice(idx,1);
-          if(!items.length) items.push(blankRow());
-          renderItems();
+          updateTotal_();
+          render_();
+          setStatus('Удалено');
         });
         tdX.appendChild(bx);
-
-        tr.appendChild(tdCat);
-        tr.appendChild(tdPos);
-        tr.appendChild(tdCom);
         tr.appendChild(tdX);
+
         body.appendChild(tr);
-      })(i);
+      })(idx);
     }
   }
 
-  function openCommentModal(idx){
-    commentIdx = idx;
-    var it = items[idx] || {};
-    $('commentMeta').textContent = (it.category||'Без категории') + ' • ' + (it.position||'Без позиции');
-    $('commentInput').value = it.comment || '';
-    $('commentOverlay').classList.add('show');
+  function addItem_(){
+    if(!current) return;
+    var p = ($('newPosition').value||'').trim();
+    if(!p){ setStatus('Выберите позицию'); return; }
+    items.push({article:p,qty:1,halls:1,days:1,eventDays:1,coef:1,unitCost:0,comment:'',rowSum:0});
+    updateTotal_();
+    render_();
+    setStatus('Добавлено');
   }
 
-  function closeCommentModal(){
-    $('commentOverlay').classList.remove('show');
-    commentIdx = null;
-  }
+  function saveAll_(){
+    if(!current) return;
+    setStatus('Сохранение…');
 
-  function hydrateFromBootstrap(){
-    if(!BOOTSTRAP || !BOOTSTRAP.estimate){
-      current = null;
-      items = [];
-      positionsByCategory = {};
-      positionsAll = [];
-      categories = [];
-      setHeader(null);
-      setStatus('Error: Проект не найден.');
-      return;
-    }
-
-    current = BOOTSTRAP.estimate;
-    positionsByCategory = BOOTSTRAP.positionsByCategory || {};
-    positionsAll = arr(BOOTSTRAP.positions);
-    categories = arr(BOOTSTRAP.categories);
-
-    items = [];
-    var src = arr(BOOTSTRAP.items);
-    for(var i=0;i<src.length;i++){
-      var x=src[i]||{};
-      items.push({
-        category: String(x.category || '').trim(),
-        position: String(x.position || '').trim(),
-        comment: String(x.comment || '').trim()
+    var payload=[];
+    for(var i=0;i<items.length;i++){
+      var it=items[i]||{};
+      payload.push({
+        article: String(it.article||'').trim(),
+        qty: num(it.qty,0),
+        halls: num(it.halls,0),
+        days: num(it.days,0),
+        eventDays: num(it.eventDays,0),
+        coef: num(it.coef,1),
+        unitCost: num(it.unitCost,0),
+        comment: String(it.comment||'') // сохраняется после патча main.gs
       });
     }
-    if(!items.length) items.push(blankRow());
 
-    renderItems();
-    setHeader(current);
-    setStatus('Готово');
+    google.script.run
+      .withSuccessHandler(function(res){
+        setStatus('Сохранено');
+        if(res && current){
+          current.itemsCount = res.itemsCount;
+          current.totalSum = res.totalSum;
+          updateHeader_();
+        }
+      })
+      .withFailureHandler(function(e){
+        setStatus('Ошибка: ' + stripErr_(e && e.message ? e.message : e));
+      })
+      .saveEstimateItems(current.id, payload);
   }
 
-  function init(){
-    $('btnAddRow').addEventListener('click', function(){
-      if(!current) return;
-      items.push(blankRow());
-      renderItems();
-    });
-
-    $('btnSave').addEventListener('click', function(){
-      if(!current) return;
-      setStatus('Сохранение…');
-
-      var payload=[];
-      for(var i=0;i<items.length;i++){
-        var it=items[i]||{};
-        payload.push({
-          category:String(it.category||'').trim(),
-          position:String(it.position||'').trim(),
-          comment:String(it.comment||'').trim()
-        });
-      }
-
-      google.script.run
-        .withSuccessHandler(function(res){
-          setStatus('Сохранено');
-          if(res){
-            current.itemsCount = res.itemsCount;
-          }
-        })
-        .withFailureHandler(function(e){
-          setStatus(String(e&&e.message?e.message:e));
-        })
-        .saveEstimateItems(current.id, payload);
-    });
-
-    $('btnOpenSheet').addEventListener('click', function(){
-      if(!current) return;
-      setStatus('Выгружаю на лист…');
-      google.script.run
-        .withSuccessHandler(function(){ setStatus('Готово') })
-        .withFailureHandler(function(e){ setStatus(String(e&&e.message?e.message:e)) })
-        .exportEstimateToSheet(current.id);
-    });
-
-    $('btnBack').addEventListener('click', function(){
-      setStatus('Открываю проекты…');
-      google.script.run
-        .withSuccessHandler(function(){ google.script.host.close(); })
-        .withFailureHandler(function(e){ setStatus(String(e&&e.message?e.message:e)) })
-        .openEstimateBuilder();
-    });
-
-    $('commentCancel').addEventListener('click', function(){
-      closeCommentModal();
-    });
-
-    $('commentSave').addEventListener('click', function(){
-      if(commentIdx === null) return;
-      items[commentIdx].comment = $('commentInput').value.trim();
-      closeCommentModal();
-      renderItems();
-    });
-
-    $('commentOverlay').addEventListener('click', function(e){
-      if(e.target === $('commentOverlay')) closeCommentModal();
-    });
-
-    hydrateFromBootstrap();
+  function back_(){
+    setStatus('Открываю…');
+    google.script.run
+      .withSuccessHandler(function(){ google.script.host.close(); })
+      .withFailureHandler(function(e){ setStatus('Ошибка: '+stripErr_(e && e.message ? e.message : e)); })
+      .openEstimateBuilder();
   }
 
-  window.addEventListener('load', init);
+  function load_(){
+    setStatus('Загрузка…');
+    google.script.run
+      .withSuccessHandler(function(res){
+        current = res.estimate;
+        articlesByCategory = res.articlesByCategory || {};
+        items=[];
+
+        var src = arr(res.items);
+        for(var i=0;i<src.length;i++){
+          var x=src[i]||{};
+          items.push({
+            article: String(x.article||''),
+            qty: num(x.qty,0),
+            halls: num(x.halls,0),
+            days: num(x.days,0),
+            eventDays: num(x.eventDays,0),
+            coef: num(x.coef,1),
+            unitCost: num(x.unitCost,0),
+            comment: String(x.comment||''),
+            rowSum: 0
+          });
+        }
+
+        var list = articleList_();
+        fillSelect_($('newPosition'), list, '— выберите позицию —');
+        updateHint_();
+
+        updateTotal_();
+        updateHeader_();
+        render_();
+
+        setStatus('Готово');
+      })
+      .withFailureHandler(function(e){
+        current=null;
+        items=[];
+        fillSelect_($('newPosition'), [], '—');
+        updateTotal_();
+        updateHeader_();
+        render_();
+        setStatus('Ошибка: ' + stripErr_(e && e.message ? e.message : e));
+      })
+      .getEstimateItemsBootstrap(estimateId);
+  }
+
+  function init_(){
+    $('btnBack').addEventListener('click', back_);
+    $('btnSave').addEventListener('click', saveAll_);
+    $('btnAdd').addEventListener('click', addItem_);
+
+    $('cClose').addEventListener('click', closeComment);
+    $('cOverlay').addEventListener('click', function(e){ if(e.target===this) closeComment(); });
+    $('cClear').addEventListener('click', function(){ $('cText').value=''; });
+    $('cSave').addEventListener('click', saveComment);
+
+    load_();
+  }
+
+  window.addEventListener('load', init_);
 </script>
 </body>
 </html>
