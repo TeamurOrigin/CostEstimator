@@ -273,6 +273,7 @@
   var activeDropdownCloser=null;
   var activeDropdownInput=null;
   var suppressDropdownInput=false;
+  var suppressDropdownOpen=false;
 
   var dirty=false;
   var saving=false;
@@ -419,6 +420,7 @@
 
   function openPositionDropdown_(input){
     if(!input) return;
+    if(suppressDropdownOpen) return;
     if(input.disabled){ closePositionDropdown_(); return; }
     var list = positionList_();
     if(!list.length){ closePositionDropdown_(); return; }
@@ -454,8 +456,10 @@
           input.value = opt;
           suppressDropdownInput = true;
           input.dispatchEvent(new Event('input', { bubbles: true }));
+          suppressDropdownOpen = true;
           closePositionDropdown_();
           input.focus();
+          setTimeout(function(){ suppressDropdownOpen = false; }, 0);
         });
 
         panel.appendChild(item);
@@ -490,7 +494,10 @@
 
   function attachPositionDropdown_(input){
     if(!input) return;
-    input.addEventListener('focus', function(){ openPositionDropdown_(input); });
+    input.addEventListener('focus', function(){
+      if(suppressDropdownOpen) return;
+      openPositionDropdown_(input);
+    });
     input.addEventListener('input', function(){
       if(suppressDropdownInput){
         suppressDropdownInput = false;
