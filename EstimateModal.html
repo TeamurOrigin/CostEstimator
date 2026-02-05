@@ -4,64 +4,269 @@
   <base target="_top">
   <meta charset="UTF-8">
   <style>
-    :root{--bg:#070d18;--panel:rgba(15,23,42,.72);--panel2:rgba(2,6,23,.42);--text:#e7eefc;--muted:#95a6c7;--border:rgba(148,163,184,.16);--border2:rgba(148,163,184,.10);--accent:#38bdf8;--green:#34d399;--red:#ef4444;--shadow:0 18px 70px rgba(0,0,0,.55);--shadow2:0 10px 28px rgba(0,0,0,.35);--r:16px;--r2:12px}
+    :root{
+      --bg:#070d18;
+      --panel:rgba(15,23,42,.72);
+      --panel2:rgba(2,6,23,.42);
+      --text:#e7eefc;
+      --muted:#95a6c7;
+      --border:rgba(148,163,184,.16);
+      --border2:rgba(148,163,184,.10);
+      --accent:#38bdf8;
+      --green:#34d399;
+      --red:#ef4444;
+      --shadow:0 18px 70px rgba(0,0,0,.55);
+      --shadow2:0 10px 28px rgba(0,0,0,.35);
+      --r:16px;
+      --r2:12px;
+
+      /* ✅ dropdown like sample */
+      --dd-bg: rgba(15, 23, 42, 0.18);
+      --dd-border: rgba(148, 163, 184, 0.22);
+    }
     *{box-sizing:border-box}html,body{height:100%}
-    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:12px;line-height:1.25;color:var(--text);
-      background:radial-gradient(900px 420px at 12% -10%, rgba(56,189,248,.16), transparent 55%),
-                 radial-gradient(900px 420px at 88% 0%, rgba(52,211,153,.13), transparent 55%),
-                 radial-gradient(900px 520px at 50% 110%, rgba(99,102,241,.10), transparent 55%),
-                 linear-gradient(180deg,#060b16 0%,#040816 100%)}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      font-size:12px;line-height:1.25;color:var(--text);
+      background:
+        radial-gradient(900px 420px at 12% -10%, rgba(56,189,248,.16), transparent 55%),
+        radial-gradient(900px 420px at 88% 0%, rgba(52,211,153,.13), transparent 55%),
+        radial-gradient(900px 520px at 50% 110%, rgba(99,102,241,.10), transparent 55%),
+        linear-gradient(180deg,#060b16 0%,#040816 100%)
+    }
 
     .wrap{padding:14px}
-    .top{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r);
-      background:linear-gradient(180deg, rgba(15,23,42,.82), rgba(15,23,42,.62));box-shadow:var(--shadow);margin-bottom:12px;position:relative;overflow:hidden}
-    .top:before{content:"";position:absolute;inset:-2px;background:radial-gradient(600px 140px at 18% 0%, rgba(56,189,248,.18), transparent 60%),
-                                              radial-gradient(600px 160px at 86% 0%, rgba(52,211,153,.14), transparent 60%);pointer-events:none;opacity:.9}
+    .top{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:12px 14px;border:1px solid var(--border);border-radius:var(--r);
+      background:linear-gradient(180deg, rgba(15,23,42,.82), rgba(15,23,42,.62));
+      box-shadow:var(--shadow);margin-bottom:12px;position:relative;overflow:hidden
+    }
+    .top:before{
+      content:"";position:absolute;inset:-2px;
+      background:
+        radial-gradient(600px 140px at 18% 0%, rgba(56,189,248,.18), transparent 60%),
+        radial-gradient(600px 160px at 86% 0%, rgba(52,211,153,.14), transparent 60%);
+      pointer-events:none;opacity:.9
+    }
     .top>*{position:relative;z-index:1}
     .title{font-weight:950;font-size:15px;letter-spacing:.2px}
-    .status{font-size:11px;color:var(--muted);padding:6px 10px;border:1px solid var(--border2);border-radius:999px;background:rgba(2,6,23,.40);box-shadow:inset 0 1px 0 rgba(255,255,255,.04);white-space:nowrap}
+    .status{
+      font-size:11px;color:var(--muted);padding:6px 10px;
+      border:1px solid var(--border2);border-radius:999px;background:rgba(2,6,23,.40);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);white-space:nowrap
+    }
 
-    /* ✅ ЛЕВЫЙ БЛОК СУЖЕН */
     .split{display:grid;grid-template-columns:minmax(420px,520px) 1fr;gap:12px}
 
-    .card{border:1px solid var(--border);border-radius:var(--r);background:linear-gradient(180deg, rgba(15,23,42,.76), rgba(2,6,23,.44));box-shadow:var(--shadow2);overflow:hidden;position:relative;min-height:610px}
-    .card:before{content:"";position:absolute;inset:0;background:radial-gradient(800px 220px at 22% 0%, rgba(56,189,248,.10), transparent 55%),
-                                              radial-gradient(800px 220px at 82% 0%, rgba(52,211,153,.08), transparent 55%);pointer-events:none;opacity:.9}
+    .card{
+      border:1px solid var(--border);border-radius:var(--r);
+      background:linear-gradient(180deg, rgba(15,23,42,.76), rgba(2,6,23,.44));
+      box-shadow:var(--shadow2);overflow:hidden;position:relative;min-height:610px
+    }
+    .card:before{
+      content:"";position:absolute;inset:0;
+      background:
+        radial-gradient(800px 220px at 22% 0%, rgba(56,189,248,.10), transparent 55%),
+        radial-gradient(800px 220px at 82% 0%, rgba(52,211,153,.08), transparent 55%);
+      pointer-events:none;opacity:.9
+    }
     .card>*{position:relative;z-index:1}
 
-    .h{padding:12px 14px;border-bottom:1px solid var(--border2);font-weight:950;display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(180deg, rgba(2,6,23,.32), rgba(2,6,23,.12))}
+    .h{
+      padding:12px 14px;border-bottom:1px solid var(--border2);
+      font-weight:950;display:flex;align-items:center;justify-content:space-between;gap:10px;
+      background:linear-gradient(180deg, rgba(2,6,23,.32), rgba(2,6,23,.12))
+    }
     .b{padding:12px 14px}
     .tools{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
-    .pill{font-size:11px;color:var(--muted);padding:6px 10px;border:1px solid var(--border2);border-radius:999px;background:rgba(2,6,23,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.04);white-space:nowrap}
+    .pill{
+      font-size:11px;color:var(--muted);padding:6px 10px;
+      border:1px solid var(--border2);border-radius:999px;background:rgba(2,6,23,.35);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);white-space:nowrap
+    }
 
     label{display:block;font-size:11px;color:var(--muted);margin:0 0 6px}
-    input,select,textarea{width:100%;border-radius:12px;border:1px solid var(--border2);background:rgba(2,6,23,.44);color:var(--text);outline:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.035);transition:box-shadow .12s ease,border-color .12s ease,background .12s ease}
+    input,select,textarea{
+      width:100%;border-radius:12px;border:1px solid var(--border2);
+      background:rgba(2,6,23,.44);color:var(--text);outline:none;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+      transition:box-shadow .12s ease,border-color .12s ease,background .12s ease
+    }
     input,select{height:34px;padding:8px 10px}
     input::placeholder{color:rgba(149,166,199,.55)}
-    input:focus,select:focus,textarea:focus{border-color:rgba(56,189,248,.55);box-shadow:0 0 0 3px rgba(56,189,248,.12), inset 0 1px 0 rgba(255,255,255,.04);background:rgba(2,6,23,.50)}
+    input:focus,select:focus,textarea:focus{
+      border-color:rgba(56,189,248,.55);
+      box-shadow:0 0 0 3px rgba(56,189,248,.12), inset 0 1px 0 rgba(255,255,255,.04);
+      background:rgba(2,6,23,.50)
+    }
 
-    .btn{height:34px;padding:0 12px;border-radius:12px;border:1px solid var(--border2);background:linear-gradient(180deg, rgba(2,6,23,.55), rgba(2,6,23,.35));color:var(--text);font-weight:950;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);transition:transform .12s ease,filter .12s ease;white-space:nowrap}
-    .btn:hover{transform:translateY(-1px);filter:brightness(1.06)}.btn:active{transform:translateY(0)}
-    .btn.acc{border-color:rgba(56,189,248,.45);box-shadow:0 0 0 3px rgba(56,189,248,.08), inset 0 1px 0 rgba(255,255,255,.05)}
-    .btn.green{border-color:rgba(52,211,153,.45);box-shadow:0 0 0 3px rgba(52,211,153,.08), inset 0 1px 0 rgba(255,255,255,.05)}
-    .btn.red{border-color:rgba(239,68,68,.45);box-shadow:0 0 0 3px rgba(239,68,68,.08), inset 0 1px 0 rgba(255,255,255,.05)}
+    .btn{
+      --pulse: rgba(56,189,248,.18);
+      height:34px;padding:0 12px;border-radius:12px;border:1px solid var(--border2);
+      background:linear-gradient(180deg, rgba(2,6,23,.55), rgba(2,6,23,.35));
+      color:var(--text);font-weight:950;cursor:pointer;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+      transition:transform .12s ease,filter .12s ease;
+      white-space:nowrap;position:relative
+    }
+    .btn:hover{transform:translateY(-1px);filter:brightness(1.06)}
+    .btn:active{transform:translateY(0)}
+    .btn.acc{
+      --pulse: rgba(56,189,248,.22);
+      border-color:rgba(56,189,248,.45);
+      box-shadow:0 0 0 3px rgba(56,189,248,.08), inset 0 1px 0 rgba(255,255,255,.05)
+    }
+    .btn.green{
+      --pulse: rgba(52,211,153,.22);
+      border-color:rgba(52,211,153,.45);
+      box-shadow:0 0 0 3px rgba(52,211,153,.08), inset 0 1px 0 rgba(255,255,255,.05)
+    }
+    .btn.red{
+      --pulse: rgba(239,68,68,.22);
+      border-color:rgba(239,68,68,.45);
+      box-shadow:0 0 0 3px rgba(239,68,68,.08), inset 0 1px 0 rgba(255,255,255,.05)
+    }
     .mini{height:30px;border-radius:11px}
 
-    .gridL{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-bottom:12px}
+    @keyframes btnPulse{
+      0%{ box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 0 0 0 rgba(0,0,0,0); filter:brightness(1.02); }
+      50%{ box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 0 0 5px var(--pulse); filter:brightness(1.08); }
+      100%{ box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 0 0 0 rgba(0,0,0,0); filter:brightness(1.02); }
+    }
+    .btn.busy{animation:btnPulse .95s ease-in-out infinite; pointer-events:none; opacity:.98}
+    .btn:disabled{cursor:default}
+
+    .gridL{display:grid;grid-template-columns:1fr 180px auto;gap:10px;align-items:end;margin-bottom:12px}
     .gridR{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px}
 
-    .tableShell{border:1px solid var(--border2);border-radius:14px;overflow:auto;max-height:520px;background:rgba(2,6,23,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+    .tableShell{
+      border:1px solid var(--border2);border-radius:14px;overflow:auto;max-height:520px;
+      background:rgba(2,6,23,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.03)
+    }
     table{width:100%;border-collapse:separate;border-spacing:0;font-size:11.25px}
     th,td{padding:8px 8px;border-bottom:1px solid rgba(148,163,184,.09);vertical-align:middle}
-    th{color:rgba(149,166,199,.85);font-weight:950;text-align:left;background:rgba(2,6,23,.28);position:sticky;top:0;z-index:2;box-shadow:inset 0 -1px 0 rgba(148,163,184,.08)}
+    th{
+      color:rgba(149,166,199,.85);font-weight:950;text-align:left;background:rgba(2,6,23,.28);
+      position:sticky;top:0;z-index:2;box-shadow:inset 0 -1px 0 rgba(148,163,184,.08)
+    }
+    th.th-center{text-align:center}
+    th.th-right{text-align:right}
     tbody tr:hover td{background:rgba(56,189,248,.05)}
     tr.sel td{background:rgba(56,189,248,.09)}
     td.num{text-align:right}
     td.center{text-align:center}
-
-    /* ✅ КНОПКИ ДУБЛ/УДАЛ ГОРИЗОНТАЛЬНО */
     .actions{display:flex;gap:8px;justify-content:flex-end;align-items:center}
     .actions .btn{width:auto;min-width:72px}
+
+    /* ✅ confirm dialog */
+    .dlgOverlay{
+      position:fixed;inset:0;z-index:9999;
+      background:rgba(0,0,0,.58);
+      display:flex;align-items:center;justify-content:center;
+      padding:14px
+    }
+    .dlgOverlay.hidden{display:none}
+    .dlg{
+      width:min(560px, calc(100vw - 28px));
+      border:1px solid var(--border);
+      border-radius:18px;
+      background:linear-gradient(180deg, rgba(15,23,42,.90), rgba(2,6,23,.72));
+      box-shadow:var(--shadow);
+      position:relative;overflow:hidden
+    }
+    .dlg:before{
+      content:"";position:absolute;inset:-2px;
+      background:
+        radial-gradient(700px 160px at 20% 0%, rgba(56,189,248,.14), transparent 60%),
+        radial-gradient(700px 180px at 82% 0%, rgba(52,211,153,.10), transparent 60%);
+      pointer-events:none;opacity:.95
+    }
+    .dlg>*{position:relative;z-index:1}
+    .dlgH{padding:12px 14px;border-bottom:1px solid var(--border2);font-weight:950}
+    .dlgB{padding:12px 14px;color:rgba(231,238,252,.92);line-height:1.35}
+    .dlgActions{padding:12px 14px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+
+    /* =========================
+       ✅ DROPDOWN (like sample)
+       ========================= */
+    .type-dd-btn{
+      width:100%;
+      height:34px;
+      border:1px solid var(--dd-border);
+      border-radius:12px;
+      padding:6px 30px 6px 10px;
+      font-size:12px;
+      font-weight:950;
+      letter-spacing:0;
+      cursor:pointer;
+      text-align:left;
+      background-color:rgba(2,6,23,.44);
+      color:var(--text);
+      background-image:
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23e2e8f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+      background-repeat:no-repeat;
+      background-position:right 10px center;
+      background-size:14px 14px;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.04),
+        0 10px 20px rgba(0,0,0,0.18);
+      transition:transform .12s ease, border-color .12s ease, box-shadow .12s ease, filter .12s ease;
+    }
+    .type-dd-btn:hover{
+      transform:translateY(-1px);
+      border-color:rgba(56, 189, 248, 0.55);
+      filter:brightness(1.03);
+    }
+    .type-dd-btn:focus-visible{
+      outline:none;
+      border-color:rgba(56, 189, 248, 0.75);
+      box-shadow:
+        0 0 0 2px rgba(56, 189, 248, 0.18),
+        0 16px 26px rgba(0,0,0,0.30);
+    }
+
+    .type-dd-panel{
+      position:fixed;
+      z-index:9998;
+      background:var(--dd-bg);
+      backdrop-filter:blur(14px);
+      -webkit-backdrop-filter:blur(14px);
+      border:1px solid var(--dd-border);
+      border-radius:12px;
+      box-shadow:0 18px 40px rgba(0,0,0,0.45);
+      padding:4px;
+      max-height:280px;
+      overflow:auto;
+    }
+
+    .type-dd-item{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:6px 8px;
+      border-radius:10px;
+      cursor:pointer;
+      user-select:none;
+      font-size:12px;
+      font-weight:950;
+      letter-spacing:0;
+      transition:background .12s ease, transform .12s ease;
+    }
+    .type-dd-item:hover{
+      background:rgba(56, 189, 248, 0.14);
+      transform:translateX(1px);
+    }
+    .type-dd-item.is-active{
+      background:rgba(148, 163, 184, 0.16);
+    }
+    .type-dd-check{
+      font-size:12px;
+      font-weight:950;
+      opacity:0.9;
+    }
   </style>
 </head>
 
@@ -73,7 +278,6 @@
     </div>
 
     <div class="split">
-      <!-- ЛЕВЫЙ БЛОК: Проекты -->
       <div class="card">
         <div class="h">
           <div>Проекты</div>
@@ -89,6 +293,12 @@
               <label>Наименование проекта</label>
               <input id="newProjectName" placeholder="Например: Энергетики">
             </div>
+
+            <div>
+              <label>Тариф</label>
+              <div id="newProjectTariffMount"></div>
+            </div>
+
             <button class="btn acc" id="btnCreateProject">Новая смета</button>
           </div>
 
@@ -97,9 +307,9 @@
               <thead>
                 <tr>
                   <th style="width:54%">Проект</th>
-                  <th style="width:16%">Позиции</th>
-                  <th style="width:18%">Сумма</th>
-                  <th style="width:12%">Действия</th>
+                  <th class="th-center" style="width:16%">Позиции</th>
+                  <th class="th-right" style="width:18%">Сумма</th>
+                  <th class="th-center" style="width:12%">Действия</th>
                 </tr>
               </thead>
               <tbody id="projectsBody"></tbody>
@@ -108,7 +318,6 @@
         </div>
       </div>
 
-      <!-- ПРАВЫЙ БЛОК: Смета (Записи) -->
       <div class="card">
         <div class="h">
           <div id="entriesTitle">Смета</div>
@@ -141,9 +350,9 @@
                   <th style="width:22%">Тип</th>
                   <th style="width:20%">Группа</th>
                   <th style="width:24%">Категория</th>
-                  <th style="width:12%">Позиции</th>
-                  <th style="width:14%">Сумма</th>
-                  <th style="width:8%">Действия</th>
+                  <th class="th-center" style="width:12%">Позиции</th>
+                  <th class="th-right" style="width:14%">Сумма</th>
+                  <th class="th-center" style="width:8%">Действия</th>
                 </tr>
               </thead>
               <tbody id="entriesBody"></tbody>
@@ -154,24 +363,195 @@
     </div>
   </div>
 
+  <div id="dlgOverlay" class="dlgOverlay hidden" aria-hidden="true">
+    <div class="dlg" role="dialog" aria-modal="true">
+      <div class="dlgH" id="dlgTitle">Подтверждение</div>
+      <div class="dlgB" id="dlgText">—</div>
+      <div class="dlgActions">
+        <button class="btn red" id="dlgOk">Удалить</button>
+        <button class="btn" id="dlgCancel">Отмена</button>
+      </div>
+    </div>
+  </div>
+
 <script>
   var boot=null;
   var selectedProjectId='';
   var selectedProject=null;
   var entries=[];
+  var PROJECT_TARIFFS=['Фиксированный','Тарифный','Обычный','Процентный'];
+  var tariffDD=null;
 
   function $(id){return document.getElementById(id)}
   function setStatus(t){$('status').textContent=t}
   function arr(a){return a&&a.length?a:[]}
   function money(n){var x=Number(n||0);return x.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})}
 
-  function fillSelect(sel, list){
+  function setBusy(btn,on){
+    if(!btn) return;
+    if(on){
+      btn.classList.add('busy');
+      btn.disabled=true;
+    } else {
+      btn.classList.remove('busy');
+      btn.disabled=false;
+    }
+  }
+
+  function callGs(btn, statusText, method, args, onSuccess){
+    setStatus(statusText||'');
+    setBusy(btn,true);
+    var r = google.script.run
+      .withSuccessHandler(function(res){
+        setBusy(btn,false);
+        if(onSuccess) onSuccess(res);
+      })
+      .withFailureHandler(function(err){
+        setBusy(btn,false);
+        setStatus(String(err&&err.message?err.message:err));
+      });
+    r[method].apply(r, args||[]);
+  }
+
+  function fillSelect(sel, list, value){
     sel.innerHTML='';
     for(var i=0;i<list.length;i++){
       var o=document.createElement('option');
       o.value=list[i];o.textContent=list[i];
       sel.appendChild(o);
     }
+    if(value!=null) sel.value=value;
+  }
+
+  /* =========================
+     ✅ Custom dropdown (tariff)
+     ========================= */
+  var activeDropdownCloser=null;
+
+  function createDropdown(options, initial, onSelect){
+    var value = (initial!=null ? String(initial) : (options && options[0] ? String(options[0]) : ''));
+    var btn = document.createElement('button');
+    btn.type='button';
+    btn.className='type-dd-btn';
+    btn.textContent = value || '—';
+
+    function closeActive(){
+      if(activeDropdownCloser){ activeDropdownCloser(); }
+    }
+
+    function openPanel(){
+      closeActive();
+
+      var rect = btn.getBoundingClientRect();
+      var panel = document.createElement('div');
+      panel.className='type-dd-panel';
+      panel.style.left = Math.round(rect.left) + 'px';
+      panel.style.top = Math.round(rect.bottom + 6) + 'px';
+      panel.style.width = Math.round(rect.width) + 'px';
+
+      for(var i=0;i<options.length;i++){
+        (function(opt){
+          var item=document.createElement('div');
+          item.className='type-dd-item' + (String(opt)===String(value) ? ' is-active' : '');
+          item.tabIndex=0;
+
+          var label=document.createElement('span');
+          label.textContent=String(opt);
+
+          var right=document.createElement('span');
+          right.className='type-dd-check';
+          right.textContent=(String(opt)===String(value)) ? '✓' : '';
+
+          item.appendChild(label);
+          item.appendChild(right);
+
+          item.addEventListener('click', function(){
+            setValue(opt);
+            if(onSelect) onSelect(String(opt));
+            closePanel();
+          });
+
+          panel.appendChild(item);
+        })(options[i]);
+      }
+
+      document.body.appendChild(panel);
+
+      var onDocDown = function(e){
+        if(e.target===btn) return;
+        if(panel.contains(e.target)) return;
+        closePanel();
+      };
+      var onKeyDown = function(e){
+        if(e.key==='Escape') closePanel();
+      };
+
+      var wrap = document.querySelector('.wrap');
+      var onScroll = function(){ closePanel(); };
+
+      function closePanel(){
+        document.removeEventListener('mousedown', onDocDown, true);
+        document.removeEventListener('keydown', onKeyDown, true);
+        window.removeEventListener('scroll', onScroll, true);
+        if(wrap) wrap.removeEventListener('scroll', onScroll, true);
+        if(panel && panel.parentNode) panel.parentNode.removeChild(panel);
+        activeDropdownCloser=null;
+      }
+
+      document.addEventListener('mousedown', onDocDown, true);
+      document.addEventListener('keydown', onKeyDown, true);
+      window.addEventListener('scroll', onScroll, true);
+      if(wrap) wrap.addEventListener('scroll', onScroll, true);
+
+      activeDropdownCloser = closePanel;
+    }
+
+    function setValue(v){
+      value = String(v||'');
+      btn.textContent = value || '—';
+    }
+
+    function getValue(){ return value; }
+
+    btn.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      openPanel();
+    });
+
+    setValue(value);
+    return { btn: btn, getValue: getValue, setValue: setValue };
+  }
+
+  function initTariffDropdown(){
+    var mount = $('newProjectTariffMount');
+    mount.innerHTML='';
+    tariffDD = createDropdown(PROJECT_TARIFFS, 'Обычный', function(){});
+    mount.appendChild(tariffDD.btn);
+  }
+
+  /* =========================
+     ✅ Confirm dialog
+     ========================= */
+  var dlgResolve=null;
+  function confirmDialog(opts){
+    opts=opts||{};
+    return new Promise(function(resolve){
+      dlgResolve=resolve;
+      $('dlgTitle').textContent=opts.title||'Подтверждение';
+      $('dlgText').textContent=opts.text||'';
+      $('dlgOk').textContent=opts.okText||'ОК';
+      $('dlgCancel').textContent=opts.cancelText||'Отмена';
+      $('dlgOk').className='btn ' + (opts.okClass||'acc');
+      $('dlgOverlay').classList.remove('hidden');
+      $('dlgOverlay').setAttribute('aria-hidden','false');
+      setTimeout(function(){ $('dlgOk').focus(); }, 0);
+    });
+  }
+  function closeDialog(result){
+    $('dlgOverlay').classList.add('hidden');
+    $('dlgOverlay').setAttribute('aria-hidden','true');
+    if(dlgResolve){ var r=dlgResolve; dlgResolve=null; r(!!result); }
   }
 
   function renderProjects(){
@@ -194,28 +574,45 @@
         var tr=document.createElement('tr');
         if(String(p.id)===String(selectedProjectId)) tr.className='sel';
 
-        tr.addEventListener('click', function(){
-          selectProject(p.id);
-        });
+        tr.addEventListener('click', function(){ selectProject(p.id); });
 
-        var td1=document.createElement('td');td1.textContent=p.name||'';
+        var td1=document.createElement('td');
+        var name=document.createElement('div');name.style.fontWeight='950';name.textContent=p.name||'';
+        var tariff=document.createElement('div');tariff.style.marginTop='2px';tariff.style.fontSize='10.5px';tariff.style.color='rgba(149,166,199,.78)';
+        tariff.textContent=(p.tariff||'');
+        td1.appendChild(name);
+        if(p.tariff) td1.appendChild(tariff);
+
         var td2=document.createElement('td');td2.className='center';td2.textContent=String(Number(p.itemsCount||0));
         var td3=document.createElement('td');td3.className='num';td3.textContent=money(p.totalSum||0);
 
         var td4=document.createElement('td');
-
-        // ✅ горизонтально
         var box=document.createElement('div');box.className='actions';
 
         var bDup=document.createElement('button');
         bDup.className='btn mini green';
         bDup.textContent='Дубл.';
-        bDup.addEventListener('click', function(e){ e.stopPropagation(); duplicateProject(p.id); });
+        bDup.addEventListener('click', function(e){
+          e.stopPropagation();
+          duplicateProject(p.id, bDup);
+        });
 
         var bDel=document.createElement('button');
         bDel.className='btn mini red';
         bDel.textContent='Удал.';
-        bDel.addEventListener('click', function(e){ e.stopPropagation(); deleteProject(p.id); });
+        bDel.addEventListener('click', function(e){
+          e.stopPropagation();
+          confirmDialog({
+            title:'Удалить проект?',
+            text:'Проект "' + (p.name||'') + '" будет удалён вместе со всеми записями и позициями. Это действие нельзя отменить.',
+            okText:'Удалить',
+            cancelText:'Отмена',
+            okClass:'red'
+          }).then(function(ok){
+            if(!ok) return;
+            deleteProject(p.id, bDel);
+          });
+        });
 
         box.appendChild(bDup);
         box.appendChild(bDel);
@@ -242,7 +639,7 @@
     }
 
     $('entriesTitle').textContent='Смета • ' + (selectedProject.name||'');
-    $('eMeta').textContent='Записей: ' + entries.length;
+    $('eMeta').textContent='Записей: ' + entries.length + (selectedProject.tariff ? ' • ' + selectedProject.tariff : '');
 
     if(!entries.length){
       var tr0=document.createElement('tr');
@@ -269,31 +666,28 @@
         bEdit.className='btn mini acc';
         bEdit.textContent='Ред.';
         bEdit.addEventListener('click', function(){
-          var entryId = e.id || e.entryId;
-          if (!entryId) { setStatus('Запись сметы не найдена.'); return; }
-          setStatus('Открываю…');
-          google.script.run
-            .withSuccessHandler(function(){ google.script.host.close(); })
-            .withFailureHandler(function(err){ setStatus(String(err&&err.message?err.message:err)); })
-            .openEntryItems(entryId);
+          callGs(bEdit,'Открываю…','openEntryItems',[e.id],function(){ google.script.host.close(); });
         });
 
         var bDup=document.createElement('button');
         bDup.className='btn mini green';
         bDup.textContent='Дубл.';
-        bDup.addEventListener('click', function(){
-          var entryId = e.id || e.entryId;
-          if (!entryId) { setStatus('Запись сметы не найдена.'); return; }
-          duplicateEntry(entryId);
-        });
+        bDup.addEventListener('click', function(){ duplicateEntry(e.id, bDup); });
 
         var bDel=document.createElement('button');
         bDel.className='btn mini red';
         bDel.textContent='Удал.';
         bDel.addEventListener('click', function(){
-          var entryId = e.id || e.entryId;
-          if (!entryId) { setStatus('Запись сметы не найдена.'); return; }
-          deleteEntry(entryId);
+          confirmDialog({
+            title:'Удалить запись?',
+            text:'Запись "' + (e.type||'') + ' • ' + (e.group||'') + ' • ' + (e.category||'') + '" будет удалена вместе со всеми позициями. Это действие нельзя отменить.',
+            okText:'Удалить',
+            cancelText:'Отмена',
+            okClass:'red'
+          }).then(function(ok){
+            if(!ok) return;
+            deleteEntry(e.id, bDel);
+          });
         });
 
         box.appendChild(bEdit);
@@ -307,29 +701,25 @@
     }
   }
 
-  function refreshAll(cb){
-    setStatus('Загрузка…');
-    google.script.run
-      .withSuccessHandler(function(data){
-        boot=data;
+  function refreshAll(btn, cb){
+    callGs(btn,'Загрузка…','getBootstrapData',[],function(data){
+      boot=data;
 
-        fillSelect($('newType'), arr(boot.types));
-        fillSelect($('newCategory'), arr(boot.categories));
+      fillSelect($('newType'), arr(boot.types));
+      fillSelect($('newCategory'), arr(boot.categories));
 
-        renderProjects();
+      renderProjects();
 
-        if(selectedProjectId){
-          selectProject(selectedProjectId, cb);
-        } else {
-          selectedProject=null;
-          entries=[];
-          renderEntries();
-          setStatus('Готово');
-          if(cb) cb();
-        }
-      })
-      .withFailureHandler(function(err){ setStatus(String(err&&err.message?err.message:err)); })
-      .getBootstrapData();
+      if(selectedProjectId){
+        selectProject(selectedProjectId, cb);
+      } else {
+        selectedProject=null;
+        entries=[];
+        renderEntries();
+        setStatus('Готово');
+        if(cb) cb();
+      }
+    });
   }
 
   function selectProject(id, cb){
@@ -354,39 +744,31 @@
       .getProjectEntries(selectedProjectId);
   }
 
-  function createProject(){
+  function createProject(btn){
     var name=$('newProjectName').value.trim();
+    var tariff=(tariffDD && tariffDD.getValue ? tariffDD.getValue().trim() : '');
     if(!name){ setStatus('Укажите наименование проекта'); return; }
-    setStatus('Создание проекта…');
-    google.script.run
-      .withSuccessHandler(function(p){
-        $('newProjectName').value='';
-        refreshAll(function(){ selectProject(p.id); });
-      })
-      .withFailureHandler(function(err){ setStatus(String(err&&err.message?err.message:err)); })
-      .createProject({name:name});
+    if(!tariff){ setStatus('Укажите тариф'); return; }
+
+    callGs(btn,'Создание проекта…','createProject',[{name:name, tariff:tariff}],function(p){
+      $('newProjectName').value='';
+      if(tariffDD && tariffDD.setValue) tariffDD.setValue('Обычный');
+      refreshAll(null,function(){ selectProject(p.id); });
+    });
   }
 
-  function deleteProject(id){
-    setStatus('Удаление проекта…');
-    google.script.run
-      .withSuccessHandler(function(){
-        if(String(id)===String(selectedProjectId)){ selectedProjectId=''; selectedProject=null; entries=[]; }
-        refreshAll();
-      })
-      .withFailureHandler(function(err){ setStatus(String(err&&err.message?err.message:err)); })
-      .deleteProject(id);
+  function deleteProject(id, btn){
+    callGs(btn,'Удаление проекта…','deleteProject',[id],function(){
+      if(String(id)===String(selectedProjectId)){ selectedProjectId=''; selectedProject=null; entries=[]; }
+      refreshAll(null);
+    });
   }
 
-  function duplicateProject(id){
-    setStatus('Дублирование проекта…');
-    google.script.run
-      .withSuccessHandler(function(){ refreshAll(); })
-      .withFailureHandler(function(err){ setStatus(String(err&&err.message?err.message:err)); })
-      .duplicateProject(id);
+  function duplicateProject(id, btn){
+    callGs(btn,'Дублирование проекта…','duplicateProject',[id],function(){ refreshAll(null); });
   }
 
-  function createEntry(){
+  function createEntry(btn){
     if(!selectedProjectId){ setStatus('Сначала выберите проект'); return; }
     var type=$('newType').value.trim();
     var group=$('newGroup').value.trim();
@@ -394,38 +776,36 @@
     if(!type){ setStatus('Укажите тип'); return; }
     if(!category){ setStatus('Укажите категорию'); return; }
 
-    setStatus('Создание записи…');
-    google.script.run
-      .withSuccessHandler(function(){
-        $('newGroup').value='';
-        selectProject(selectedProjectId);
-      })
-      .withFailureHandler(function(err){ setStatus(String(err&&err.message?err.message:err)); })
-      .createEntry(selectedProjectId, {type:type, group:group, category:category});
+    callGs(btn,'Создание записи…','createEntry',[selectedProjectId,{type:type, group:group, category:category}],function(){
+      $('newGroup').value='';
+      selectProject(selectedProjectId);
+    });
   }
 
-  function deleteEntry(entryId){
-    setStatus('Удаление записи…');
-    google.script.run
-      .withSuccessHandler(function(){ selectProject(selectedProjectId); })
-      .withFailureHandler(function(err){ setStatus(String(err&&err.message?err.message:err)); })
-      .deleteEntry(entryId);
+  function deleteEntry(entryId, btn){
+    callGs(btn,'Удаление записи…','deleteEntry',[entryId],function(){ selectProject(selectedProjectId); });
   }
 
-  function duplicateEntry(entryId){
-    setStatus('Дублирование записи…');
-    google.script.run
-      .withSuccessHandler(function(){ selectProject(selectedProjectId); })
-      .withFailureHandler(function(err){ setStatus(String(err&&err.message?err.message:err)); })
-      .duplicateEntry(entryId);
+  function duplicateEntry(entryId, btn){
+    callGs(btn,'Дублирование записи…','duplicateEntry',[entryId],function(){ selectProject(selectedProjectId); });
   }
 
   function init(){
-    $('btnRefresh').addEventListener('click', function(){ refreshAll(); });
-    $('btnCreateProject').addEventListener('click', createProject);
-    $('btnCreateEntry').addEventListener('click', createEntry);
-    refreshAll();
+    initTariffDropdown();
+
+    $('btnRefresh').addEventListener('click', function(e){ refreshAll(e.currentTarget); });
+    $('btnCreateProject').addEventListener('click', function(e){ createProject(e.currentTarget); });
+    $('btnCreateEntry').addEventListener('click', function(e){ createEntry(e.currentTarget); });
+
+    $('dlgOk').addEventListener('click', function(){ closeDialog(true); });
+    $('dlgCancel').addEventListener('click', function(){ closeDialog(false); });
+    window.addEventListener('keydown', function(e){
+      if(e.key==='Escape' && !$('dlgOverlay').classList.contains('hidden')) closeDialog(false);
+    });
+
+    refreshAll(null);
   }
+
   window.addEventListener('load', init);
 </script>
 </body>
