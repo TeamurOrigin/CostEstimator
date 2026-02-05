@@ -153,11 +153,12 @@
   </div>
 
 <script>
-  var estimateId = <?= JSON.stringify(estimateId) ?>;
+  var entryId = <?= JSON.stringify(entryId) ?>;
 
   var current=null;
+  var currentProject=null;
   var items=[];
-  var articlesByCategory={};
+  var positionsByCategory={};
   var currentCommentIdx=-1;
 
   function $(id){return document.getElementById(id)}
@@ -167,9 +168,9 @@
   function money(n){var x=Number(n||0);return x.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})}
   function num(v,def){if(def===undefined)def=0;if(v===null||v===undefined||v==='')return def;var x=Number(String(v).replace(',','.'));return isFinite(x)?x:def}
 
-  function articleList_(){
+  function positionList_(){
     var cat = current && current.category ? String(current.category).trim() : '';
-    var list = (articlesByCategory && cat && articlesByCategory[cat]) ? arr(articlesByCategory[cat]) : [];
+    var list = (positionsByCategory && cat && positionsByCategory[cat]) ? arr(positionsByCategory[cat]) : [];
     return list;
   }
 
@@ -195,7 +196,7 @@
       return;
     }
     var t = current.type ? (' • ' + current.type) : '';
-    $('hdrTitle').textContent = (current.name || '—') + t;
+    $('hdrTitle').textContent = ((currentProject && currentProject.name) || '—') + t;
     $('hdrSub').textContent = 'Категория: ' + (current.category || '—');
     $('hdrMeta').textContent = 'Позиции: ' + items.length + ' • Сумма: ' + $('totalSum').textContent;
   }
@@ -222,7 +223,7 @@
   function openComment(idx){
     currentCommentIdx=idx;
     var it=items[idx]||{};
-    $('cHint').textContent='Комментарий для: '+String(it.article||'позиции');
+    $('cHint').textContent='Комментарий для: '+String(it.position||'позиции');
     $('cText').value=String(it.comment||'');
     $('cOverlay').classList.add('show');
     $('cOverlay').setAttribute('aria-hidden','false');
@@ -270,7 +271,7 @@
       return;
     }
 
-    var opts = articleList_();
+    var opts = positionList_();
 
     for(var idx=0; idx<items.length; idx++){
       (function(idx){
@@ -285,11 +286,11 @@
         sel.appendChild(ph);
 
         // если текущая позиция не в списке — добавим сверху
-        if(it.article){
+        if(it.position){
           var exists=false;
-          for(var q=0;q<opts.length;q++){ if(opts[q]===it.article){ exists=true; break; } }
+          for(var q=0;q<opts.length;q++){ if(opts[q]===it.position){ exists=true; break; } }
           if(!exists){
-            var oX=document.createElement('option');oX.value=it.article;oX.textContent=it.article;
+            var oX=document.createElement('option');oX.value=it.position;oX.textContent=it.position;
             sel.appendChild(oX);
           }
         }
@@ -299,9 +300,9 @@
           sel.appendChild(o);
         }
 
-        sel.value = it.article || '';
+        sel.value = it.position || '';
         sel.addEventListener('change', function(e){
-          items[idx].article=e.target.value;
+          items[idx].position=e.target.value;
           setStatus('Обновлено');
         });
         tdPos.appendChild(sel);
@@ -368,7 +369,7 @@
     if(!current) return;
     var p = ($('newPosition').value||'').trim();
     if(!p){ setStatus('Выберите позицию'); return; }
-    items.push({article:p,qty:1,halls:1,days:1,eventDays:1,coef:1,unitCost:0,comment:'',rowSum:0});
+    items.push({position:p,qty:1,halls:1,days:1,eventDays:1,coef:1,unitCost:0,comment:'',rowSum:0});
     updateTotal_();
     render_();
     setStatus('Добавлено');
@@ -382,7 +383,7 @@
     for(var i=0;i<items.length;i++){
       var it=items[i]||{};
       payload.push({
-        article: String(it.article||'').trim(),
+        position: String(it.position||'').trim(),
         qty: num(it.qty,0),
         halls: num(it.halls,0),
         days: num(it.days,0),
@@ -396,16 +397,12 @@
     google.script.run
       .withSuccessHandler(function(res){
         setStatus('Сохранено');
-        if(res && current){
-          current.itemsCount = res.itemsCount;
-          current.totalSum = res.totalSum;
-          updateHeader_();
-        }
+        updateHeader_();
       })
       .withFailureHandler(function(e){
         setStatus('Ошибка: ' + stripErr_(e && e.message ? e.message : e));
       })
-      .saveEstimateItems(current.id, payload);
+      .saveEntryAll(entryId, {}, payload);
   }
 
   function back_(){
@@ -420,15 +417,16 @@
     setStatus('Загрузка…');
     google.script.run
       .withSuccessHandler(function(res){
-        current = res.estimate;
-        articlesByCategory = res.articlesByCategory || {};
+        currentProject = res.project || null;
+        current = res.entry || null;
+        positionsByCategory = res.positionsByCategory || {};
         items=[];
 
         var src = arr(res.items);
         for(var i=0;i<src.length;i++){
           var x=src[i]||{};
           items.push({
-            article: String(x.article||''),
+            position: String(x.position||''),
             qty: num(x.qty,0),
             halls: num(x.halls,0),
             days: num(x.days,0),
@@ -440,7 +438,7 @@
           });
         }
 
-        var list = articleList_();
+        var list = positionList_();
         fillSelect_($('newPosition'), list, '— выберите позицию —');
         updateHint_();
 
@@ -459,7 +457,7 @@
         render_();
         setStatus('Ошибка: ' + stripErr_(e && e.message ? e.message : e));
       })
-      .getEstimateItemsBootstrap(estimateId);
+      .getEntryItemsBootstrap(entryId);
   }
 
   function init_(){
