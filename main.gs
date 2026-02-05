@@ -41,7 +41,7 @@ function getBootstrapData() {
   ensureCoreSheets_();
   var ref = readRef_();
   var projects = listProjects_();
-  return { projects: projects, categories: ref.categories, positionsByCategory: ref.positionsByCategory, types: ref.types };
+  return { projects: projects, categories: ref.categories, positionsByCategory: ref.positionsByCategory, types: ref.types, pricesByPosition: ref.pricesByPosition };
 }
 
 /** ПРАВЫЙ БЛОК: список записей сметы по проекту */
@@ -265,7 +265,7 @@ function getEntryItemsBootstrap(entryId) {
 
   var ref = readRef_();
   var items = normalizeItems_(loadItems_(entryId));
-  return { project: info.project, entry: info.entry, items: items, categories: ref.categories, positionsByCategory: ref.positionsByCategory, types: ref.types };
+  return { project: info.project, entry: info.entry, items: items, categories: ref.categories, positionsByCategory: ref.positionsByCategory, types: ref.types, pricesByPosition: ref.pricesByPosition };
 }
 
 function saveEntryAll(entryId, meta, items) {
@@ -350,22 +350,26 @@ function ensureCoreSheets_() {
 function readRef_() {
   var ss = SpreadsheetApp.getActive();
   var sh = ss.getSheetByName(REF_SHEET_NAME);
-  if (!sh) return { categories: [], positionsByCategory: {}, types: [] };
+  if (!sh) return { categories: [], positionsByCategory: {}, types: [], pricesByPosition: {} };
 
   var last = sh.getLastRow();
-  if (last < 2) return { categories: [], positionsByCategory: {}, types: [] };
+  if (last < 2) return { categories: [], positionsByCategory: {}, types: [], pricesByPosition: {} };
 
   var cats = sh.getRange(2, 1, last - 1, 1).getValues();  // A
   var pos = sh.getRange(2, 2, last - 1, 1).getValues();   // B
+  var prices = sh.getRange(2, 3, last - 1, 1).getValues(); // C
   var typesRange = sh.getRange(2, 4, last - 1, 1).getValues(); // D
 
   var map = {};
+  var pricesMap = {};
   for (var i = 0; i < cats.length; i++) {
     var c = String(cats[i][0] || '').trim();
     var p = String(pos[i][0] || '').trim();
+    var price = toNumber_(prices[i][0], 0);
     if (!c || !p) continue;
     if (!map[c]) map[c] = [];
     map[c].push(p);
+    if (price || price === 0) pricesMap[p] = price;
   }
 
   var categories = Object.keys(map).sort(function(x, y) { return x.localeCompare(y, 'ru'); });
@@ -394,7 +398,7 @@ function readRef_() {
   }
   types.sort(function(x, y) { return x.localeCompare(y, 'ru'); });
 
-  return { categories: categories, positionsByCategory: map, types: types };
+  return { categories: categories, positionsByCategory: map, types: types, pricesByPosition: pricesMap };
 }
 
 function listProjects_() {

@@ -5,7 +5,7 @@
   <base target="_top">
   <meta charset="UTF-8">
   <style>
-    :root{--bg:#070d18;--panel:rgba(15,23,42,.72);--panel2:rgba(2,6,23,.42);--text:#e7eefc;--muted:#95a6c7;--border:rgba(148,163,184,.16);--border2:rgba(148,163,184,.10);--accent:#38bdf8;--green:#34d399;--red:#ef4444;--shadow:0 18px 70px rgba(0,0,0,.55);--shadow2:0 10px 28px rgba(0,0,0,.35);--r:16px}
+    :root{--bg:#070d18;--panel:rgba(15,23,42,.72);--panel2:rgba(2,6,23,.42);--text:#e7eefc;--muted:#95a6c7;--border:rgba(148,163,184,.16);--border2:rgba(148,163,184,.10);--accent:#38bdf8;--green:#34d399;--red:#ef4444;--shadow:0 18px 70px rgba(0,0,0,.55);--shadow2:0 10px 28px rgba(0,0,0,.35);--r:16px;--dd-bg:rgba(15,23,42,.18);--dd-border:rgba(148,163,184,.22)}
     *{box-sizing:border-box}html,body{height:100%}
     body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:12px;line-height:1.25;color:var(--text);
       background:radial-gradient(900px 420px at 12% -10%, rgba(56,189,248,.16), transparent 55%),
@@ -65,6 +65,38 @@
     input::placeholder{color:rgba(149,166,199,.55)}
 
     .addGrid{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-bottom:10px}
+
+    .type-dd-panel{
+      position:fixed;
+      z-index:9998;
+      background:var(--dd-bg);
+      backdrop-filter:blur(14px);
+      -webkit-backdrop-filter:blur(14px);
+      border:1px solid var(--dd-border);
+      border-radius:12px;
+      box-shadow:0 18px 40px rgba(0,0,0,0.45);
+      padding:4px;
+      max-height:280px;
+      overflow:auto;
+    }
+    .position-dd-panel{max-height:360px}
+    .type-dd-item{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:6px 8px;
+      border-radius:10px;
+      cursor:pointer;
+      user-select:none;
+      font-size:12px;
+      font-weight:950;
+      letter-spacing:0;
+      transition:background .12s ease, transform .12s ease;
+    }
+    .type-dd-item:hover{
+      background:rgba(56, 189, 248, 0.14);
+      transform:translateX(1px);
+    }
 
     .itemsWrap{border:1px solid var(--border2);border-radius:14px;overflow:auto;max-height:490px;background:rgba(2,6,23,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
     table{width:100%;border-collapse:separate;border-spacing:0;font-size:11.25px;table-layout:fixed}
@@ -155,8 +187,7 @@
         <div class="addGrid">
           <div>
             <label>Позиция (можно вводить вручную или выбрать)</label>
-            <input id="newPosition" list="posList" placeholder="Начните вводить…" autocomplete="off">
-            <datalist id="posList"></datalist>
+            <input id="newPosition" placeholder="Начните вводить…" autocomplete="off">
           </div>
           <button class="btn green" id="btnAdd" type="button">Добавить позицию</button>
         </div>
@@ -238,7 +269,12 @@
   var items=[];
   var positionsByCategory={};
   var allPositions=[];
+  var pricesByPosition={};
   var currentCommentIdx=-1;
+  var activeDropdownCloser=null;
+  var activeDropdownInput=null;
+  var suppressDropdownInput=false;
+  var suppressDropdownOpen=false;
 
   var dirty=false;
   var saving=false;
@@ -369,6 +405,7 @@
     $('btnBack').disabled = saving;
     $('btnAdd').disabled  = saving;
     $('newPosition').disabled = saving;
+    if(saving) closePositionDropdown_();
     if(saving) setStatus('Сохранение…');
   }
 
@@ -378,13 +415,112 @@
     return arr(allPositions);
   }
 
-  function fillDatalist_(dl, list){
-    dl.innerHTML='';
-    for(var i=0;i<list.length;i++){
-      var o=document.createElement('option');
-      o.value=list[i];
-      dl.appendChild(o);
+  function unitCostForPosition_(position){
+    var key = String(position || '').trim();
+    if(!key) return 0;
+    if(pricesByPosition && Object.prototype.hasOwnProperty.call(pricesByPosition, key)){
+      return num(pricesByPosition[key], 0);
     }
+    return 0;
+  }
+
+  function closePositionDropdown_(){
+    if(activeDropdownCloser){ activeDropdownCloser(); }
+  }
+
+  function openPositionDropdown_(input){
+    if(!input) return;
+    if(suppressDropdownOpen) return;
+    if(input.disabled){ closePositionDropdown_(); return; }
+    var list = positionList_();
+    if(!list.length){ closePositionDropdown_(); return; }
+
+    var query = String(input.value || '').toLowerCase();
+    var options = [];
+    for(var i=0;i<list.length;i++){
+      var opt = String(list[i] || '');
+      if(!query || opt.toLowerCase().indexOf(query) !== -1) options.push(opt);
+    }
+    if(!options.length){ closePositionDropdown_(); return; }
+
+    closePositionDropdown_();
+
+    var rect = input.getBoundingClientRect();
+    var panel = document.createElement('div');
+    panel.className='type-dd-panel position-dd-panel';
+    panel.style.left = Math.round(rect.left) + 'px';
+    panel.style.top = Math.round(rect.bottom + 6) + 'px';
+    panel.style.width = Math.round(rect.width) + 'px';
+
+    for(var j=0;j<options.length;j++){
+      (function(opt){
+        var item=document.createElement('div');
+        item.className='type-dd-item';
+        item.tabIndex=0;
+
+        var label=document.createElement('span');
+        label.textContent=opt;
+        item.appendChild(label);
+
+        item.addEventListener('click', function(){
+          input.value = opt;
+          suppressDropdownInput = true;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          suppressDropdownOpen = true;
+          closePositionDropdown_();
+          input.focus();
+          setTimeout(function(){ suppressDropdownOpen = false; }, 0);
+        });
+
+        panel.appendChild(item);
+      })(options[j]);
+    }
+
+    document.body.appendChild(panel);
+    activeDropdownInput = input;
+
+    var onDocDown = function(e){
+      if(e.target===input) return;
+      if(panel.contains(e.target)) return;
+      closePositionDropdown_();
+    };
+    var onKeyDown = function(e){
+      if(e.key==='Escape') closePositionDropdown_();
+    };
+    function closePanel(){
+      document.removeEventListener('mousedown', onDocDown, true);
+      document.removeEventListener('keydown', onKeyDown, true);
+      if(panel && panel.parentNode) panel.parentNode.removeChild(panel);
+      activeDropdownCloser=null;
+      activeDropdownInput=null;
+    }
+
+    document.addEventListener('mousedown', onDocDown, true);
+    document.addEventListener('keydown', onKeyDown, true);
+    panel.addEventListener('wheel', function(e){ e.stopPropagation(); });
+
+    activeDropdownCloser = closePanel;
+  }
+
+  function attachPositionDropdown_(input){
+    if(!input) return;
+    input.addEventListener('focus', function(){
+      if(suppressDropdownOpen) return;
+      openPositionDropdown_(input);
+    });
+    input.addEventListener('input', function(){
+      if(suppressDropdownInput){
+        suppressDropdownInput = false;
+        return;
+      }
+      openPositionDropdown_(input);
+    });
+    input.addEventListener('keydown', function(e){
+      if(e.key==='ArrowDown'){
+        e.preventDefault();
+        openPositionDropdown_(input);
+      }
+    });
   }
 
   function updateHeader_(){
@@ -498,13 +634,20 @@
         var tr=document.createElement('tr');
 
         var tdPos=document.createElement('td');tdPos.className='pos';
+        var unitCostInput=null;
         var inpPos=document.createElement('input');
-        inpPos.setAttribute('list','posList');
         inpPos.placeholder='Позиция…';
         inpPos.value = String(it.position || '');
         inpPos.disabled = saving;
+        attachPositionDropdown_(inpPos);
         inpPos.addEventListener('input', function(e){
           items[idx].position = e.target.value;
+          items[idx].unitCost = unitCostForPosition_(e.target.value);
+          if(unitCostInput) unitCostInput.value = String(items[idx].unitCost || 0);
+          var updatedSum = rowSum_(items[idx]);
+          items[idx].rowSum = updatedSum;
+          tdSum.textContent = money(updatedSum);
+          updateTotal_();
           markDirty_();
           setStatus('Обновлено (не забудьте нажать “Сохранить”)');
         });
@@ -519,6 +662,15 @@
           inp.addEventListener('input', oninput);
           td.appendChild(inp);
           return td;
+        }
+        function cellNumWithRef(val, oninput){
+          var td=document.createElement('td');
+          var inp=document.createElement('input');
+          inp.value=(val===undefined||val===null)?'':String(val);
+          inp.disabled = saving;
+          inp.addEventListener('input', oninput);
+          td.appendChild(inp);
+          return { td: td, input: inp };
         }
 
         var tdSum=document.createElement('td');tdSum.className='sum';
@@ -541,7 +693,9 @@
         tr.appendChild(cellNum(it.days, bind('days',0)));
         tr.appendChild(cellNum(it.eventDays, bind('eventDays',0)));
         tr.appendChild(cellNum(it.coef, bind('coef',1)));
-        tr.appendChild(cellNum(it.unitCost, bind('unitCost',0)));
+        var unitCell = cellNumWithRef(it.unitCost, bind('unitCost',0));
+        unitCostInput = unitCell.input;
+        tr.appendChild(unitCell.td);
 
         tr.appendChild(tdSum);
 
@@ -580,7 +734,8 @@
     if(!current || saving) return;
     var p = ($('newPosition').value||'').trim();
     if(!p){ setStatus('Укажите позицию'); return; }
-    items.push({position:p,qty:1,halls:1,days:1,eventDays:1,coef:1,unitCost:0,comment:'',rowSum:0});
+    var unitCost = unitCostForPosition_(p);
+    items.push({position:p,qty:1,halls:1,days:1,eventDays:1,coef:1,unitCost:unitCost,comment:'',rowSum:0});
     $('newPosition').value='';
     updateTotal_();
     render_();
@@ -660,6 +815,7 @@
         currentProject = res.project || null;
         current = res.entry || null;
         positionsByCategory = res.positionsByCategory || {};
+        pricesByPosition = res.pricesByPosition || {};
 
         allPositions = [];
         for (var key in positionsByCategory) {
@@ -695,7 +851,7 @@
           });
         }
 
-        fillDatalist_($('posList'), positionList_());
+        closePositionDropdown_();
         updateTotal_();
         updateHeader_();
         render_();
@@ -708,9 +864,10 @@
         current=null;
         items=[];
         positionsByCategory={};
+        pricesByPosition={};
         allPositions=[];
-        $('posList').innerHTML='';
         $('newPosition').value='';
+        closePositionDropdown_();
         updateTotal_();
         updateHeader_();
         render_();
@@ -728,6 +885,7 @@
       saveAll_(null, [this]);
     });
     $('btnAdd').addEventListener('click', addItem_);
+    attachPositionDropdown_($('newPosition'));
 
     $('newPosition').addEventListener('keydown', function(e){
       if(e.key === 'Enter'){ e.preventDefault(); addItem_(); }
