@@ -1,3 +1,4 @@
+<!-- EstimateItemsModal.html -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -34,23 +35,38 @@
 
     .btn{height:34px;padding:0 12px;border-radius:12px;border:1px solid var(--border2);background:linear-gradient(180deg, rgba(2,6,23,.55), rgba(2,6,23,.35));color:var(--text);font-weight:950;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);transition:transform .12s ease,filter .12s ease;white-space:nowrap}
     .btn:hover{transform:translateY(-1px);filter:brightness(1.06)}.btn:active{transform:translateY(0)}
+    .btn:disabled{opacity:.55;cursor:not-allowed;filter:saturate(.9)}
     .btn.acc{border-color:rgba(56,189,248,.45);box-shadow:0 0 0 3px rgba(56,189,248,.08), inset 0 1px 0 rgba(255,255,255,.05)}
     .btn.green{border-color:rgba(52,211,153,.45);box-shadow:0 0 0 3px rgba(52,211,153,.08), inset 0 1px 0 rgba(255,255,255,.05)}
     .btn.red{border-color:rgba(239,68,68,.45);box-shadow:0 0 0 3px rgba(239,68,68,.08), inset 0 1px 0 rgba(255,255,255,.05)}
     .mini{height:30px;border-radius:11px}
 
+    /* Busy indicator (pulse only, no spinner) */
+    @keyframes btnPulse {
+      0%,100% { transform:translateY(0); filter:brightness(1.02); }
+      50% { transform:translateY(-1px); filter:brightness(1.09); }
+    }
+    @keyframes btnGlow {
+      0%,100% { box-shadow:0 0 0 3px rgba(56,189,248,.10), 0 0 0 rgba(56,189,248,0), inset 0 1px 0 rgba(255,255,255,.05); }
+      50% { box-shadow:0 0 0 7px rgba(56,189,248,.22), 0 0 24px rgba(56,189,248,.16), inset 0 1px 0 rgba(255,255,255,.05); }
+    }
+    .btn.busy{
+      animation:btnPulse .95s ease-in-out infinite, btnGlow .95s ease-in-out infinite;
+      pointer-events:none;
+    }
+
     .b{padding:12px 14px}
 
     label{display:block;font-size:11px;color:var(--muted);margin:0 0 6px}
-    select,input,textarea{width:100%;border-radius:12px;border:1px solid var(--border2);background:rgba(2,6,23,.44);color:var(--text);outline:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.035);transition:box-shadow .12s ease,border-color .12s ease,background .12s ease}
-    select,input{height:34px;padding:8px 10px}
+    input,textarea{width:100%;border-radius:12px;border:1px solid var(--border2);background:rgba(2,6,23,.44);color:var(--text);outline:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.035);transition:box-shadow .12s ease,border-color .12s ease,background .12s ease}
+    input{height:34px;padding:8px 10px}
     textarea{min-height:160px;padding:10px 12px;resize:vertical}
-    select:focus,input:focus,textarea:focus{border-color:rgba(56,189,248,.55);box-shadow:0 0 0 3px rgba(56,189,248,.12), inset 0 1px 0 rgba(255,255,255,.04);background:rgba(2,6,23,.50)}
+    input:focus,textarea:focus{border-color:rgba(56,189,248,.55);box-shadow:0 0 0 3px rgba(56,189,248,.12), inset 0 1px 0 rgba(255,255,255,.04);background:rgba(2,6,23,.50)}
+    input::placeholder{color:rgba(149,166,199,.55)}
 
-    .addGrid{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-bottom:8px}
-    .note{color:rgba(149,166,199,.85);font-size:11px;margin:0 0 10px}
+    .addGrid{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-bottom:10px}
 
-    .itemsWrap{border:1px solid var(--border2);border-radius:14px;overflow:auto;max-height:460px;background:rgba(2,6,23,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+    .itemsWrap{border:1px solid var(--border2);border-radius:14px;overflow:auto;max-height:490px;background:rgba(2,6,23,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
     table{width:100%;border-collapse:separate;border-spacing:0;font-size:11.25px;table-layout:fixed}
     th,td{padding:7px 6px;border-bottom:1px solid rgba(148,163,184,.09);vertical-align:middle}
     th{color:rgba(149,166,199,.85);font-weight:950;text-align:center;background:rgba(2,6,23,.28);position:sticky;top:0;z-index:2;box-shadow:inset 0 -1px 0 rgba(148,163,184,.08);font-size:10.5px;line-height:1.05}
@@ -58,22 +74,60 @@
     td.pos{text-align:left;padding-left:10px}
     td.sum{text-align:right;font-weight:950;padding-right:10px}
     td input{height:28px;padding:4px 8px;font-size:11px;border-radius:999px;text-align:center}
-    td.pos select{height:28px;padding:4px 10px;font-size:11px;border-radius:12px;width:100%;text-align:left}
+    td.pos input{height:28px;padding:4px 10px;font-size:11px;border-radius:12px;width:100%;text-align:left}
 
     .col-pos{width:360px}.col-num{width:70px}.col-sum{width:120px}.col-comm{width:120px}.col-x{width:54px}
 
     .sumBar{margin-top:10px;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border2);border-radius:14px;background:linear-gradient(180deg, rgba(2,6,23,.34), rgba(2,6,23,.22));font-weight:950;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
     .sumBar .m{font-weight:950;color:rgba(149,166,199,.85);font-size:11px}
 
-    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:14px}
-    .overlay.show{display:flex}
-    .modal{width:min(720px, 100%);border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg, rgba(15,23,42,.92), rgba(2,6,23,.66));box-shadow:0 24px 80px rgba(0,0,0,.65);overflow:hidden;position:relative}
-    .modal:before{content:"";position:absolute;inset:0;background:radial-gradient(800px 220px at 22% 0%, rgba(56,189,248,.12), transparent 55%),
-                                              radial-gradient(800px 220px at 82% 0%, rgba(52,211,153,.10), transparent 55%);pointer-events:none;opacity:.95}
+    /* ===== POPUPS (comment + unsaved) ===== */
+    body.modal-open .wrap{pointer-events:none;user-select:none}
+    body.modal-open .overlay{pointer-events:auto}
+
+    .overlay{
+      position:fixed;inset:0;
+      background:rgba(0,0,0,.80);
+      display:none;align-items:center;justify-content:center;padding:14px;
+      backdrop-filter: blur(3px);
+      z-index:99999;
+      pointer-events:none;
+    }
+    .overlay.show{display:flex;pointer-events:auto}
+
+    .modal{
+      width:min(760px, 100%);
+      border:1px solid rgba(148,163,184,.22);
+      border-radius:18px;
+      background:linear-gradient(180deg, rgba(15,23,42,.88), rgba(2,6,23,.80));
+      box-shadow:0 28px 96px rgba(0,0,0,.72);
+      overflow:hidden;position:relative;
+    }
+    .modal:before{
+      content:"";position:absolute;inset:0;
+      background:radial-gradient(900px 260px at 22% 0%, rgba(56,189,248,.14), transparent 58%),
+                 radial-gradient(900px 260px at 82% 0%, rgba(52,211,153,.12), transparent 58%);
+      pointer-events:none;opacity:.95
+    }
     .modal>*{position:relative;z-index:1}
-    .mh{padding:12px 14px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:950}
+
+    .mh{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(148,163,184,.14);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      background:linear-gradient(180deg, rgba(2,6,23,.56), rgba(2,6,23,.28));
+    }
+    .mhLeft{min-width:0}
+    .mhTitle{
+      font-weight:950;font-size:13px;letter-spacing:.2px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:520px;
+    }
+    .mhSub{margin-top:2px;font-size:11px;color:rgba(149,166,199,.88)}
     .mb{padding:12px 14px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end;margin-top:10px}
+
+    .modal.unsaved{width:min(560px, 100%)}
+    .uText{color:rgba(149,166,199,.92);font-size:12px;line-height:1.35;margin:2px 0 0}
   </style>
 </head>
 
@@ -92,20 +146,20 @@
         </div>
         <div class="tools">
           <span class="pill" id="hdrMeta">—</span>
-          <button class="btn mini" id="btnBack">К проектам</button>
-          <button class="btn acc mini" id="btnSave">Сохранить</button>
+          <button class="btn mini" id="btnBack" type="button">К проектам</button>
+          <button class="btn acc mini" id="btnSave" type="button">Сохранить</button>
         </div>
       </div>
 
       <div class="b">
         <div class="addGrid">
           <div>
-            <label>Позиция</label>
-            <select id="newPosition"></select>
+            <label>Позиция (можно вводить вручную или выбрать)</label>
+            <input id="newPosition" list="posList" placeholder="Начните вводить…" autocomplete="off">
+            <datalist id="posList"></datalist>
           </div>
-          <button class="btn green" id="btnAdd">Добавить позицию</button>
+          <button class="btn green" id="btnAdd" type="button">Добавить позицию</button>
         </div>
-        <div class="note" id="posHint">—</div>
 
         <div class="itemsWrap">
           <table>
@@ -135,25 +189,49 @@
     </div>
   </div>
 
+  <!-- COMMENT POPUP -->
   <div class="overlay" id="cOverlay" aria-hidden="true">
-    <div class="modal">
+    <div class="modal" id="cModal" role="dialog" aria-modal="true">
       <div class="mh">
-        <div>Комментарий</div>
-        <button class="btn mini" id="cClose">Закрыть</button>
+        <div class="mhLeft">
+          <div class="mhTitle" id="cTitle">—</div>
+          <div class="mhSub">Редактирование комментария</div>
+        </div>
+        <button class="btn mini" id="cClose" type="button">Закрыть</button>
       </div>
       <div class="mb">
         <label id="cHint">Комментарий</label>
         <textarea id="cText" placeholder="Введите комментарий…" spellcheck="false"></textarea>
         <div class="row">
-          <button class="btn" id="cClear">Очистить</button>
-          <button class="btn acc" id="cSave">Сохранить</button>
+          <button class="btn" id="cClear" type="button">Очистить</button>
+          <button class="btn acc" id="cSave" type="button">Сохранить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UNSAVED CHANGES POPUP -->
+  <div class="overlay" id="uOverlay" aria-hidden="true">
+    <div class="modal unsaved" id="uModal" role="dialog" aria-modal="true">
+      <div class="mh">
+        <div class="mhLeft">
+          <div class="mhTitle" id="uTitle">Несохранённые изменения</div>
+          <div class="mhSub">Вы хотите сохранить перед выходом?</div>
+        </div>
+      </div>
+      <div class="mb">
+        <div class="uText" id="uText">Есть изменения в позициях сметы. Если выйти сейчас, изменения могут быть потеряны.</div>
+        <div class="row">
+          <button class="btn acc" id="uYes" type="button">Сохранить</button>
+          <button class="btn red" id="uNo" type="button">Не сохранять</button>
+          <button class="btn" id="uCancel" type="button">Отмена</button>
         </div>
       </div>
     </div>
   </div>
 
 <script>
-  var entryId = <?= JSON.stringify(entryId) ?>;
+  var entryId = <?!= JSON.stringify(entryId) ?>;
 
   var current=null;
   var currentProject=null;
@@ -162,6 +240,9 @@
   var allPositions=[];
   var currentCommentIdx=-1;
 
+  var dirty=false;
+  var saving=false;
+
   function $(id){return document.getElementById(id)}
   function stripErr_(m){m=String(m||'');m=m.replace(/^Error:\s*/,'').replace(/^Error:\s*/,'');return m.trim()}
   function setStatus(t){$('status').textContent=t}
@@ -169,25 +250,140 @@
   function money(n){var x=Number(n||0);return x.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})}
   function num(v,def){if(def===undefined)def=0;if(v===null||v===undefined||v==='')return def;var x=Number(String(v).replace(',','.'));return isFinite(x)?x:def}
 
+  function markDirty_(){
+    if(!dirty){
+      dirty=true;
+      if($('status').textContent==='Готово') setStatus('Есть несохранённые изменения');
+    }
+  }
+  function clearDirty_(){dirty=false}
+
+  function isCommentOpen_(){ return $('cOverlay').classList.contains('show'); }
+  function isUnsavedOpen_(){ return $('uOverlay').classList.contains('show'); }
+  function isAnyModalOpen_(){ return isCommentOpen_() || isUnsavedOpen_(); }
+
+  function setModalOpen_(on){
+    if(on) document.body.classList.add('modal-open');
+    else document.body.classList.remove('modal-open');
+  }
+
+  function focusablesIn_(root){
+    var nodes = root.querySelectorAll('button,[href],input,textarea,select,[tabindex]:not([tabindex="-1"])');
+    var out=[];
+    for(var i=0;i<nodes.length;i++){
+      var el=nodes[i];
+      if(el.disabled) continue;
+      if(el.getAttribute('aria-hidden')==='true') continue;
+      if(el.offsetParent===null && el !== document.activeElement) continue;
+      out.push(el);
+    }
+    return out;
+  }
+
+  function activeModal_(){
+    if(isUnsavedOpen_()) return $('uModal');
+    if(isCommentOpen_()) return $('cModal');
+    return null;
+  }
+  function focusFallback_(){
+    if(isUnsavedOpen_()) { $('uYes').focus(); return; }
+    if(isCommentOpen_()) { $('cText').focus(); return; }
+  }
+
+  function trapTab_(e){
+    if(e.key !== 'Tab') return;
+    var modal=activeModal_();
+    if(!modal) return;
+    var f=focusablesIn_(modal);
+    if(!f.length) return;
+
+    var first=f[0], last=f[f.length-1];
+    if(e.shiftKey){
+      if(document.activeElement === first || !modal.contains(document.activeElement)){
+        e.preventDefault();
+        last.focus();
+      }
+    }else{
+      if(document.activeElement === last){
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  }
+
+  function keepFocusInsideAny_(){
+    var modal=activeModal_();
+    if(!modal) return;
+    if(!modal.contains(document.activeElement)){
+      focusFallback_();
+    }
+  }
+
+  function setBtnBusy_(btn, on){
+    if(!btn) return;
+    if(on){
+      btn.classList.add('busy');
+      btn.setAttribute('aria-busy','true');
+    }else{
+      btn.classList.remove('busy');
+      btn.removeAttribute('aria-busy');
+    }
+  }
+  function setBusyMany_(btns, on){
+    btns = arr(btns);
+    for(var i=0;i<btns.length;i++) setBtnBusy_(btns[i], on);
+  }
+  function setDisabledMany_(btns, on){
+    btns = arr(btns);
+    for(var i=0;i<btns.length;i++){
+      if(btns[i]) btns[i].disabled = !!on;
+    }
+  }
+
+  // Универсальная обёртка: любая async-операция через google.script.run + пульсация на тех кнопках, что вы передали.
+  function runGs_(busyBtns, fnName, args, ok, fail, opts){
+    busyBtns = arr(busyBtns);
+    opts = opts || {};
+
+    setBusyMany_(busyBtns, true);
+    if(opts.disableBtns) setDisabledMany_(busyBtns, true);
+
+    var runner = google.script.run
+      .withSuccessHandler(function(res){
+        setBusyMany_(busyBtns, false);
+        if(opts.disableBtns) setDisabledMany_(busyBtns, false);
+        if(typeof ok === 'function') ok(res);
+      })
+      .withFailureHandler(function(e){
+        setBusyMany_(busyBtns, false);
+        if(opts.disableBtns) setDisabledMany_(busyBtns, false);
+        if(typeof fail === 'function') fail(e);
+      });
+
+    runner[fnName].apply(runner, args || []);
+  }
+
+  function setSavingState_(on){
+    saving=!!on;
+    $('btnSave').disabled = saving;
+    $('btnBack').disabled = saving;
+    $('btnAdd').disabled  = saving;
+    $('newPosition').disabled = saving;
+    if(saving) setStatus('Сохранение…');
+  }
+
   function positionList_(){
     var cat = current && current.category ? String(current.category).trim() : '';
-    if (positionsByCategory && cat && positionsByCategory[cat]) {
-      return arr(positionsByCategory[cat]);
-    }
+    if (positionsByCategory && cat && positionsByCategory[cat]) return arr(positionsByCategory[cat]);
     return arr(allPositions);
   }
 
-  function fillSelect_(sel, list, placeholder){
-    sel.innerHTML='';
-    if(placeholder){
-      var p=document.createElement('option');
-      p.value='';p.textContent=placeholder;
-      sel.appendChild(p);
-    }
+  function fillDatalist_(dl, list){
+    dl.innerHTML='';
     for(var i=0;i<list.length;i++){
       var o=document.createElement('option');
-      o.value=list[i];o.textContent=list[i];
-      sel.appendChild(o);
+      o.value=list[i];
+      dl.appendChild(o);
     }
   }
 
@@ -198,15 +394,14 @@
       $('hdrMeta').textContent='—';
       return;
     }
-    var t = current.type ? (' • ' + current.type) : '';
-    $('hdrTitle').textContent = ((currentProject && currentProject.name) || '—') + t;
-    $('hdrSub').textContent = 'Категория: ' + (current.category || '—');
-    $('hdrMeta').textContent = 'Позиции: ' + items.length + ' • Сумма: ' + $('totalSum').textContent;
-  }
+    var title = (currentProject && currentProject.name) ? String(currentProject.name) : '—';
+    var type = String(current.type || '').trim();
+    if (type) title += ' • ' + type;
+    $('hdrTitle').textContent = title;
 
-  function updateHint_(){
-    var cat = current && current.category ? String(current.category) : '';
-    $('posHint').textContent = cat ? ('Список позиций берётся из “Справочник сметы” и фильтруется по категории: “' + cat + '”.') : 'Список позиций берётся из “Справочник сметы” (столбец B).';
+    var g = String(current.group || '').trim();
+    var c = String(current.category || '').trim();
+    $('hdrSub').textContent = 'Группа: ' + (g || '—') + ' • Категория: ' + (c || '—');
   }
 
   function rowSum_(it){
@@ -226,22 +421,45 @@
   function openComment(idx){
     currentCommentIdx=idx;
     var it=items[idx]||{};
-    $('cHint').textContent='Комментарий для: '+String(it.position||'позиции');
-    $('cText').value=String(it.comment||'');
+    var posName = String(it.position || '').trim() || 'Без названия';
+
+    $('cTitle').textContent = posName;
+    $('cHint').textContent  = 'Комментарий';
+    $('cText').value = String(it.comment||'');
+
     $('cOverlay').classList.add('show');
     $('cOverlay').setAttribute('aria-hidden','false');
-    $('cText').focus();
+    setModalOpen_(true);
+
+    setTimeout(function(){ $('cText').focus(); }, 0);
   }
+
   function closeComment(){
     $('cOverlay').classList.remove('show');
     $('cOverlay').setAttribute('aria-hidden','true');
+    if(!isUnsavedOpen_()) setModalOpen_(false);
     currentCommentIdx=-1;
   }
+
   function saveComment(){
     if(currentCommentIdx<0) return;
     items[currentCommentIdx].comment=$('cText').value||'';
+    markDirty_();
     closeComment();
-    setStatus('Комментарий сохранён');
+    setStatus('Комментарий сохранён (не забудьте нажать “Сохранить”)');
+  }
+
+  function openUnsaved_(){
+    $('uOverlay').classList.add('show');
+    $('uOverlay').setAttribute('aria-hidden','false');
+    setModalOpen_(true);
+    setTimeout(function(){ $('uYes').focus(); }, 0);
+  }
+  function closeUnsaved_(){
+    if(saving) return;
+    $('uOverlay').classList.remove('show');
+    $('uOverlay').setAttribute('aria-hidden','true');
+    if(!isCommentOpen_()) setModalOpen_(false);
   }
 
   function render_(){
@@ -274,47 +492,30 @@
       return;
     }
 
-    var opts = positionList_();
-
     for(var idx=0; idx<items.length; idx++){
       (function(idx){
         var it=items[idx]||{};
         var tr=document.createElement('tr');
 
         var tdPos=document.createElement('td');tdPos.className='pos';
-        var sel=document.createElement('select');
-
-        // placeholder
-        var ph=document.createElement('option');ph.value='';ph.textContent='— выберите позицию —';
-        sel.appendChild(ph);
-
-        // если текущая позиция не в списке — добавим сверху
-        if(it.position){
-          var exists=false;
-          for(var q=0;q<opts.length;q++){ if(opts[q]===it.position){ exists=true; break; } }
-          if(!exists){
-            var oX=document.createElement('option');oX.value=it.position;oX.textContent=it.position;
-            sel.appendChild(oX);
-          }
-        }
-
-        for(var i=0;i<opts.length;i++){
-          var o=document.createElement('option');o.value=opts[i];o.textContent=opts[i];
-          sel.appendChild(o);
-        }
-
-        sel.value = it.position || '';
-        sel.addEventListener('change', function(e){
-          items[idx].position=e.target.value;
-          setStatus('Обновлено');
+        var inpPos=document.createElement('input');
+        inpPos.setAttribute('list','posList');
+        inpPos.placeholder='Позиция…';
+        inpPos.value = String(it.position || '');
+        inpPos.disabled = saving;
+        inpPos.addEventListener('input', function(e){
+          items[idx].position = e.target.value;
+          markDirty_();
+          setStatus('Обновлено (не забудьте нажать “Сохранить”)');
         });
-        tdPos.appendChild(sel);
+        tdPos.appendChild(inpPos);
         tr.appendChild(tdPos);
 
         function cellNum(val, oninput){
           var td=document.createElement('td');
           var inp=document.createElement('input');
           inp.value=(val===undefined||val===null)?'':String(val);
+          inp.disabled = saving;
           inp.addEventListener('input', oninput);
           td.appendChild(inp);
           return td;
@@ -330,6 +531,8 @@
             items[idx].rowSum=s;
             tdSum.textContent=money(s);
             updateTotal_();
+            markDirty_();
+            setStatus('Обновлено (не забудьте нажать “Сохранить”)');
           };
         }
 
@@ -345,7 +548,9 @@
         var tdC=document.createElement('td');
         var bC=document.createElement('button');
         bC.className='btn mini';
+        bC.type='button';
         bC.textContent='Изменить';
+        bC.disabled = saving;
         bC.addEventListener('click', function(){ openComment(idx); });
         tdC.appendChild(bC);
         tr.appendChild(tdC);
@@ -353,12 +558,15 @@
         var tdX=document.createElement('td');
         var bx=document.createElement('button');
         bx.className='btn mini red';
+        bx.type='button';
         bx.textContent='×';
+        bx.disabled = saving;
         bx.addEventListener('click', function(){
           items.splice(idx,1);
           updateTotal_();
           render_();
-          setStatus('Удалено');
+          markDirty_();
+          setStatus('Удалено (не забудьте нажать “Сохранить”)');
         });
         tdX.appendChild(bx);
         tr.appendChild(tdX);
@@ -369,18 +577,27 @@
   }
 
   function addItem_(){
-    if(!current) return;
+    if(!current || saving) return;
     var p = ($('newPosition').value||'').trim();
-    if(!p){ setStatus('Выберите позицию'); return; }
+    if(!p){ setStatus('Укажите позицию'); return; }
     items.push({position:p,qty:1,halls:1,days:1,eventDays:1,coef:1,unitCost:0,comment:'',rowSum:0});
+    $('newPosition').value='';
     updateTotal_();
     render_();
-    setStatus('Добавлено');
+    markDirty_();
+    setStatus('Добавлено (не забудьте нажать “Сохранить”)');
   }
 
-  function saveAll_(){
-    if(!current) return;
-    setStatus('Сохранение…');
+  function setUnsavedButtonsDisabled_(v){
+    $('uYes').disabled=!!v;
+    $('uNo').disabled=!!v;
+    $('uCancel').disabled=!!v;
+  }
+
+  function saveAll_(cb, busyBtns){
+    if(!current || saving) return;
+
+    setSavingState_(true);
 
     var payload=[];
     for(var i=0;i<items.length;i++){
@@ -393,36 +610,57 @@
         eventDays: num(it.eventDays,0),
         coef: num(it.coef,1),
         unitCost: num(it.unitCost,0),
-        comment: String(it.comment||'') // сохраняется после патча main.gs
+        comment: String(it.comment||'')
       });
     }
 
-    google.script.run
-      .withSuccessHandler(function(res){
-        setStatus('Сохранено');
+    runGs_(busyBtns, 'saveEntryAll', [String(entryId||''), {}, payload],
+      function(){
+        clearDirty_();
         updateHeader_();
-      })
-      .withFailureHandler(function(e){
+        setSavingState_(false);
+        setStatus('Сохранено');
+        render_();
+        if(typeof cb === 'function') cb();
+      },
+      function(e){
+        setSavingState_(false);
         setStatus('Ошибка: ' + stripErr_(e && e.message ? e.message : e));
-      })
-      .saveEntryAll(entryId, {}, payload);
+        render_();
+        if(typeof cb === 'function') cb(new Error(stripErr_(e && e.message ? e.message : e)));
+      },
+      { disableBtns:false }
+    );
   }
 
-  function back_(){
+  function back_(busyBtns){
+    if(saving) return;
     setStatus('Открываю…');
-    google.script.run
-      .withSuccessHandler(function(){ google.script.host.close(); })
-      .withFailureHandler(function(e){ setStatus('Ошибка: '+stripErr_(e && e.message ? e.message : e)); })
-      .openEstimateBuilder();
+
+    runGs_(busyBtns, 'openEstimateBuilder', [],
+      function(){ google.script.host.close(); },
+      function(e){
+        setStatus('Ошибка: '+stripErr_(e && e.message ? e.message : e));
+      },
+      { disableBtns:false }
+    );
+  }
+
+  function backWithPrompt_(clickedBtn){
+    if(isAnyModalOpen_() || saving) return;
+    if(!dirty){ back_([clickedBtn]); return; }
+    openUnsaved_();
   }
 
   function load_(){
     setStatus('Загрузка…');
-    google.script.run
-      .withSuccessHandler(function(res){
+
+    runGs_(null, 'getEntryItemsBootstrap', [String(entryId||'')],
+      function(res){
         currentProject = res.project || null;
         current = res.entry || null;
         positionsByCategory = res.positionsByCategory || {};
+
         allPositions = [];
         for (var key in positionsByCategory) {
           if (Object.prototype.hasOwnProperty.call(positionsByCategory, key)) {
@@ -439,8 +677,8 @@
         }
         uniq.sort(function(a, b) { return a.localeCompare(b, 'ru'); });
         allPositions = uniq;
-        items=[];
 
+        items=[];
         var src = arr(res.items);
         for(var i=0;i<src.length;i++){
           var x=src[i]||{};
@@ -457,39 +695,110 @@
           });
         }
 
-        var list = positionList_();
-        fillSelect_($('newPosition'), list, '— выберите позицию —');
-        updateHint_();
-
+        fillDatalist_($('posList'), positionList_());
         updateTotal_();
         updateHeader_();
         render_();
 
+        saving=false;
+        clearDirty_();
         setStatus('Готово');
-      })
-      .withFailureHandler(function(e){
+      },
+      function(e){
         current=null;
         items=[];
         positionsByCategory={};
         allPositions=[];
-        fillSelect_($('newPosition'), [], '—');
+        $('posList').innerHTML='';
+        $('newPosition').value='';
         updateTotal_();
         updateHeader_();
         render_();
+        saving=false;
+        clearDirty_();
         setStatus('Ошибка: ' + stripErr_(e && e.message ? e.message : e));
-      })
-      .getEntryItemsBootstrap(entryId);
+      },
+      { disableBtns:false }
+    );
   }
 
   function init_(){
-    $('btnBack').addEventListener('click', back_);
-    $('btnSave').addEventListener('click', saveAll_);
+    $('btnBack').addEventListener('click', function(){ backWithPrompt_(this); });
+    $('btnSave').addEventListener('click', function(){
+      saveAll_(null, [this]);
+    });
     $('btnAdd').addEventListener('click', addItem_);
 
-    $('cClose').addEventListener('click', closeComment);
-    $('cOverlay').addEventListener('click', function(e){ if(e.target===this) closeComment(); });
-    $('cClear').addEventListener('click', function(){ $('cText').value=''; });
-    $('cSave').addEventListener('click', saveComment);
+    $('newPosition').addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){ e.preventDefault(); addItem_(); }
+    });
+
+    $('cClose').addEventListener('click', function(){ if(!saving) closeComment(); });
+    $('cClear').addEventListener('click', function(){ if(saving) return; $('cText').value=''; $('cText').focus(); });
+    $('cSave').addEventListener('click', function(){ if(!saving) saveComment(); });
+
+    $('cOverlay').addEventListener('click', function(e){
+      if(e.target===this && !saving) closeComment();
+    });
+
+    $('uCancel').addEventListener('click', closeUnsaved_);
+
+    // Нажали "Не сохранять" — идём назад, и именно эта кнопка пульсирует, пока идёт переход
+    $('uNo').addEventListener('click', function(){
+      if(saving) return;
+      closeUnsaved_();
+      back_([this, $('btnBack')]);
+    });
+
+    // Нажали "Сохранить" в попапе — пульсируют и попап-кнопка, и верхняя "Сохранить"
+    $('uYes').addEventListener('click', function(){
+      if(saving) return;
+
+      setUnsavedButtonsDisabled_(true);
+
+      var busyBtns = [this, $('btnSave')];
+      saveAll_(function(err){
+        setUnsavedButtonsDisabled_(false);
+        if(err) return;
+        closeUnsaved_();
+        // продолжить переход — пусть продолжит пульсировать та же кнопка
+        back_(busyBtns.concat([$ ('btnBack')]));
+      }, busyBtns);
+    });
+
+    $('uOverlay').addEventListener('click', function(e){
+      if(e.target===this) closeUnsaved_();
+    });
+
+    $('cModal').addEventListener('mousedown', function(e){ e.stopPropagation(); }, true);
+    $('uModal').addEventListener('mousedown', function(e){ e.stopPropagation(); }, true);
+
+    document.addEventListener('mousedown', function(e){
+      if(!isAnyModalOpen_()) return;
+      var modal=activeModal_();
+      if(modal && !modal.contains(e.target)){
+        e.preventDefault();
+        e.stopPropagation();
+        focusFallback_();
+      }
+    }, true);
+
+    document.addEventListener('focusin', function(){
+      keepFocusInsideAny_();
+    }, true);
+
+    document.addEventListener('keydown', function(e){
+      if(!isAnyModalOpen_()) return;
+
+      if(e.key === 'Escape'){
+        e.preventDefault();
+        if(saving) return;
+        if(isUnsavedOpen_()) closeUnsaved_();
+        else if(isCommentOpen_()) closeComment();
+        return;
+      }
+      trapTab_(e);
+    }, true);
 
     load_();
   }
