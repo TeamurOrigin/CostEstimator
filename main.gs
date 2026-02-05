@@ -50,11 +50,6 @@ function getProjectEntries(projectId) {
   var project = findProjectById_(projectId);
   if (!project) throw new Error('Проект не найден.');
   var entries = loadEntries_(projectId);
-  for (var e = 0; e < entries.length; e++) {
-    if (!entries[e].id && entries[e].entryId) {
-      entries[e].id = entries[e].entryId;
-    }
-  }
   entries.sort(function(a, b) {
     var at = String(a.type || '').localeCompare(String(b.type || ''), 'ru');
     if (at) return at;
@@ -101,10 +96,8 @@ function deleteProject(projectId) {
 
     var entries = loadEntries_(projectId);
     for (var e = 0; e < entries.length; e++) {
-      var entryId = entryIdOf_(entries[e]);
-      if (entryId) {
-        PropertiesService.getDocumentProperties().deleteProperty(ITEMS_STORE_PREFIX + entryId);
-      }
+      var entryId = String(entries[e].id);
+      PropertiesService.getDocumentProperties().deleteProperty(ITEMS_STORE_PREFIX + entryId);
     }
     PropertiesService.getDocumentProperties().deleteProperty(ENTRIES_STORE_PREFIX + projectId);
 
@@ -148,7 +141,7 @@ function duplicateProject(projectId) {
       };
       newEntries.push(ne);
 
-      var srcItems = loadItems_(entryIdOf_(se));
+      var srcItems = loadItems_(String(se.id));
       saveItems_(neId, srcItems);
 
       var totals = computeTotals_(srcItems);
@@ -214,7 +207,7 @@ function deleteEntry(entryId) {
     var entries = loadEntries_(projectId);
     var out = [];
     for (var i = 0; i < entries.length; i++) {
-      if (entryIdOf_(entries[i]) !== String(entryId)) out.push(entries[i]);
+      if (String(entries[i].id) !== String(entryId)) out.push(entries[i]);
     }
     saveEntries_(projectId, out);
     PropertiesService.getDocumentProperties().deleteProperty(ITEMS_STORE_PREFIX + entryId);
@@ -248,7 +241,7 @@ function duplicateEntry(entryId) {
       updatedAt: new Date().toISOString()
     };
 
-    var items = loadItems_(entryIdOf_(src));
+    var items = loadItems_(entryId);
     saveItems_(newId, items);
     var totals = computeTotals_(items);
     ne.itemsCount = totals.itemsCount;
@@ -321,8 +314,7 @@ function saveEntryAll(entryId, meta, items) {
 
     var entries = loadEntries_(projectId);
     for (var e = 0; e < entries.length; e++) {
-      if (entryIdOf_(entries[e]) === String(entryId)) {
-        if (!entries[e].id && entries[e].entryId) entries[e].id = entries[e].entryId;
+      if (String(entries[e].id) === String(entryId)) {
         entries[e].type = type;
         entries[e].group = group;
         entries[e].category = category;
@@ -456,17 +448,12 @@ function findEntryWithProject_(entryId) {
     var pid = String(projects[p].id);
     var entries = loadEntries_(pid);
     for (var e = 0; e < entries.length; e++) {
-      if (entryIdOf_(entries[e]) === String(entryId)) {
-        if (!entries[e].id && entries[e].entryId) entries[e].id = entries[e].entryId;
+      if (String(entries[e].id) === String(entryId)) {
         return { project: projects[p], entry: entries[e] };
       }
     }
   }
   return null;
-}
-
-function entryIdOf_(entry) {
-  return String(entry && (entry.id || entry.entryId) || '');
 }
 
 function normalizeItems_(items) {
