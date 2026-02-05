@@ -272,6 +272,7 @@
   var currentCommentIdx=-1;
   var activeDropdownCloser=null;
   var activeDropdownInput=null;
+  var suppressDropdownInput=false;
 
   var dirty=false;
   var saving=false;
@@ -451,6 +452,7 @@
 
         item.addEventListener('click', function(){
           input.value = opt;
+          suppressDropdownInput = true;
           input.dispatchEvent(new Event('input', { bubbles: true }));
           closePositionDropdown_();
           input.focus();
@@ -489,7 +491,13 @@
   function attachPositionDropdown_(input){
     if(!input) return;
     input.addEventListener('focus', function(){ openPositionDropdown_(input); });
-    input.addEventListener('input', function(){ openPositionDropdown_(input); });
+    input.addEventListener('input', function(){
+      if(suppressDropdownInput){
+        suppressDropdownInput = false;
+        return;
+      }
+      openPositionDropdown_(input);
+    });
     input.addEventListener('keydown', function(e){
       if(e.key==='ArrowDown'){
         e.preventDefault();
