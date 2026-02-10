@@ -137,6 +137,8 @@
     .btn:disabled{cursor:default}
 
     .gridL{display:grid;grid-template-columns:1fr 180px auto;gap:10px;align-items:end;margin-bottom:12px}
+    .gridImport{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:end;margin-bottom:12px}
+    .hidden{display:none!important}
     .gridR{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px}
 
     .tableShell{
@@ -284,8 +286,8 @@
         <div class="b">
           <div class="gridL">
             <div>
-              <label>Наименование проекта</label>
-              <input id="newProjectName" placeholder="Например: Энергетики">
+              <label>Режим проекта</label>
+              <div id="projectModeMount"></div>
             </div>
 
             <div>
@@ -294,6 +296,26 @@
             </div>
 
             <button class="btn acc" id="btnCreateProject">Новая смета</button>
+          </div>
+
+          <div class="gridImport hidden" id="existingProjectSelectors">
+            <div>
+              <label>Клиент</label>
+              <div id="existingClientMount"></div>
+            </div>
+            <div>
+              <label>Проект</label>
+              <div id="existingProjectMount"></div>
+            </div>
+            <div>
+              <label>Дата</label>
+              <div id="existingDateMount"></div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px">
+            <label>Наименование проекта</label>
+            <input id="newProjectName" placeholder="Например: Энергетики">
           </div>
 
           <div class="tableShell">
@@ -374,9 +396,15 @@
   var selectedProject=null;
   var entries=[];
   var PROJECT_TARIFFS=['Фиксированный','Тарифный','Обычный','Процентный'];
+  var PROJECT_MODES=['Новый клиент','Текущий клиент'];
+  var projectModeDD=null;
   var tariffDD=null;
   var typeDD=null;
   var categoryDD=null;
+  var existingClientDD=null;
+  var existingProjectDD=null;
+  var existingDateDD=null;
+  var clientsDbRows=[];
 
   function $(id){return document.getElementById(id)}
   function setStatus(t){$('status').textContent=t}
@@ -514,6 +542,100 @@
 
     setValue(value);
     return { btn: btn, getValue: getValue, setValue: setValue };
+  }
+
+
+  function getImportRows(){
+    if (!boot || !boot.clientsDbRows) return [];
+    return arr(boot.clientsDbRows);
+  }
+
+  function uniqSorted(list){
+    var seen={};
+    var out=[];
+    for(var i=0;i<list.length;i++){
+      var v=String(list[i]||'').trim();
+      if(!v || seen[v]) continue;
+      seen[v]=true;
+      out.push(v);
+    }
+    out.sort(function(a,b){ return a.localeCompare(b,'ru'); });
+    return out;
+  }
+
+  function setCreateButtonByMode(){
+    var mode = projectModeDD && projectModeDD.getValue ? projectModeDD.getValue() : 'Новый клиент';
+    $('btnCreateProject').textContent = (mode==='Текущий клиент' ? 'Импорт' : 'Новая смета');
+    $('existingProjectSelectors').classList.toggle('hidden', mode!=='Текущий клиент');
+  }
+
+  function initProjectModeDropdown(){
+    var mount=$('projectModeMount');
+    mount.innerHTML='';
+    projectModeDD = createDropdown(PROJECT_MODES, 'Новый клиент', function(){
+      setCreateButtonByMode();
+      refreshExistingClientDropdowns();
+    });
+    mount.appendChild(projectModeDD.btn);
+    setCreateButtonByMode();
+  }
+
+  function refreshExistingClientDropdowns(){
+    var rows=getImportRows();
+    clientsDbRows=rows;
+    var clientMount=$('existingClientMount');
+    var projectMount=$('existingProjectMount');
+    var dateMount=$('existingDateMount');
+    if(!clientMount || !projectMount || !dateMount) return;
+
+    clientMount.innerHTML='';
+    projectMount.innerHTML='';
+    dateMount.innerHTML='';
+
+    var clients=uniqSorted(rows.map(function(r){ return r.client; }));
+    var currentClient=existingClientDD && existingClientDD.getValue ? existingClientDD.getValue() : clients[0];
+    if(clients.indexOf(currentClient)===-1) currentClient=clients[0]||'';
+
+    existingClientDD=createDropdown(clients.length?clients:['—'], currentClient||'—', function(){ refreshExistingProjectDropdown(); });
+    clientMount.appendChild(existingClientDD.btn);
+    refreshExistingProjectDropdown();
+  }
+
+  function refreshExistingProjectDropdown(){
+    var projectMount=$('existingProjectMount');
+    var dateMount=$('existingDateMount');
+    if(!projectMount || !dateMount) return;
+
+    projectMount.innerHTML='';
+    dateMount.innerHTML='';
+
+    var client=existingClientDD && existingClientDD.getValue ? existingClientDD.getValue() : '';
+    var rows=clientsDbRows.filter(function(r){ return String(r.client||'')===String(client||''); });
+    var projects=uniqSorted(rows.map(function(r){ return r.project; }));
+    var currentProject=existingProjectDD && existingProjectDD.getValue ? existingProjectDD.getValue() : projects[0];
+    if(projects.indexOf(currentProject)===-1) currentProject=projects[0]||'';
+
+    existingProjectDD=createDropdown(projects.length?projects:['—'], currentProject||'—', function(){ refreshExistingDateDropdown(); });
+    projectMount.appendChild(existingProjectDD.btn);
+    refreshExistingDateDropdown();
+  }
+
+  function refreshExistingDateDropdown(){
+    var dateMount=$('existingDateMount');
+    if(!dateMount) return;
+    dateMount.innerHTML='';
+
+    var client=existingClientDD && existingClientDD.getValue ? existingClientDD.getValue() : '';
+    var project=existingProjectDD && existingProjectDD.getValue ? existingProjectDD.getValue() : '';
+    var rows=clientsDbRows.filter(function(r){
+      return String(r.client||'')===String(client||'') && String(r.project||'')===String(project||'');
+    });
+    var dates=uniqSorted(rows.map(function(r){ return r.date; }));
+    var currentDate=existingDateDD && existingDateDD.getValue ? existingDateDD.getValue() : dates[0];
+    if(dates.indexOf(currentDate)===-1) currentDate=dates[0]||'';
+
+    existingDateDD=createDropdown(dates.length?dates:['—'], currentDate||'—', function(){});
+    dateMount.appendChild(existingDateDD.btn);
   }
 
   function initTariffDropdown(){
@@ -714,6 +836,7 @@
       boot=data;
 
       initEntryDropdowns(arr(boot.types), arr(boot.categories));
+      refreshExistingClientDropdowns();
 
       renderProjects();
 
@@ -752,8 +875,28 @@
   }
 
   function createProject(btn){
+    var mode=(projectModeDD && projectModeDD.getValue ? projectModeDD.getValue() : 'Новый клиент');
     var name=$('newProjectName').value.trim();
     var tariff=(tariffDD && tariffDD.getValue ? tariffDD.getValue().trim() : '');
+
+    if(mode==='Текущий клиент'){
+      var client=(existingClientDD && existingClientDD.getValue ? existingClientDD.getValue().trim() : '');
+      var project=(existingProjectDD && existingProjectDD.getValue ? existingProjectDD.getValue().trim() : '');
+      var date=(existingDateDD && existingDateDD.getValue ? existingDateDD.getValue().trim() : '');
+      if(!client || client==='—'){ setStatus('Укажите клиента'); return; }
+      if(!project || project==='—'){ setStatus('Укажите проект'); return; }
+      if(!date || date==='—'){ setStatus('Укажите дату'); return; }
+      if(!name){ setStatus('Укажите наименование проекта'); return; }
+      if(!tariff){ setStatus('Укажите тариф'); return; }
+
+      callGs(btn,'Импорт проекта…','importExistingProject',[{name:name, tariff:tariff, client:client, project:project, date:date}],function(p){
+        $('newProjectName').value='';
+        if(tariffDD && tariffDD.setValue) tariffDD.setValue('Обычный');
+        refreshAll(null,function(){ selectProject(p.id); });
+      });
+      return;
+    }
+
     if(!name){ setStatus('Укажите наименование проекта'); return; }
     if(!tariff){ setStatus('Укажите тариф'); return; }
 
@@ -799,6 +942,7 @@
 
   function init(){
     initTariffDropdown();
+    initProjectModeDropdown();
 
     $('btnRefresh').addEventListener('click', function(e){ refreshAll(e.currentTarget); });
     $('btnCreateProject').addEventListener('click', function(e){ createProject(e.currentTarget); });

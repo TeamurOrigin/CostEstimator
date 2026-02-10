@@ -1,4 +1,5 @@
 var REF_SHEET_NAME = 'Справочник сметы';
+var CLIENTS_DB_SHEET_NAME = 'БД сметы';
 
 var PROJECTS_STORE_KEY = 'cs_projects_v3';
 var ENTRIES_STORE_PREFIX = 'cs_entries_v3_';
@@ -45,7 +46,8 @@ function getBootstrapData() {
     categories: ref.categories,
     positionsByCategory: ref.positionsByCategory,
     types: ref.types,
-    pricesByPosition: ref.pricesByPosition
+    pricesByPosition: ref.pricesByPosition,
+    clientsDbRows: readClientsDbRows_()
   };
 }
 
@@ -72,13 +74,110 @@ function createProject(payload) {
     var name = String(payload && payload.name ? payload.name : '').trim();
     if (!name) throw new Error('Укажите наименование проекта.');
 
+    var tariff = String(payload && payload.tariff ? payload.tariff : '').trim();
+    if (!tariff) tariff = 'Обычный';
+
     var list = loadProjects_();
     var id = Utilities.getUuid();
-    var p = { id: id, name: name, itemsCount: 0, totalSum: 0, updatedAt: new Date().toISOString() };
+    var p = { id: id, name: name, tariff: tariff, itemsCount: 0, totalSum: 0, updatedAt: new Date().toISOString() };
     list.push(p);
     saveProjects_(list);
     saveEntries_(id, []);
     return p;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function importExistingProject(payload) {
+  var lock = LockService.getDocumentLock();
+  lock.waitLock(10000);
+  try {
+    ensureCoreSheets_();
+
+    var name = String(payload && payload.name ? payload.name : '').trim();
+    var tariff = String(payload && payload.tariff ? payload.tariff : '').trim();
+    var client = String(payload && payload.client ? payload.client : '').trim();
+    var project = String(payload && payload.project ? payload.project : '').trim();
+    var date = String(payload && payload.date ? payload.date : '').trim();
+
+    if (!name) throw new Error('Укажите наименование проекта.');
+    if (!tariff) tariff = 'Обычный';
+    if (!client || !project || !date) throw new Error('Не выбраны данные клиента для импорта.');
+
+    var rows = readClientsDbRows_().filter(function(r) {
+      return String(r.client) === client && String(r.project) === project && String(r.date) === date;
+    });
+    if (!rows.length) throw new Error('По выбранным клиенту/проекту/дате данные не найдены.');
+
+    var projects = loadProjects_();
+    var projectId = Utilities.getUuid();
+    var newProject = {
+      id: projectId,
+      name: name,
+      tariff: tariff,
+      itemsCount: 0,
+      totalSum: 0,
+      updatedAt: new Date().toISOString()
+    };
+    projects.push(newProject);
+    saveProjects_(projects);
+
+    var groupsMap = {};
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i] || {};
+      var type = String(row.type || '').trim();
+      var group = String(row.group || '').trim();
+      var category = String(row.category || '').trim();
+      var position = String(row.position || '').trim();
+      if (!type || !category || !position) continue;
+
+      var key = [type, group, category].join('|||');
+      if (!groupsMap[key]) {
+        groupsMap[key] = {
+          id: Utilities.getUuid(),
+          projectId: projectId,
+          type: type,
+          group: group,
+          category: category,
+          items: []
+        };
+      }
+
+      groupsMap[key].items.push({
+        position: position,
+        qty: toNumber_(row.qty, 0),
+        halls: toNumber_(row.halls, 0),
+        days: toNumber_(row.days, 0),
+        eventDays: 1,
+        coef: toNumber_(row.coef, 1),
+        unitCost: toNumber_(row.unitCost, 0),
+        comment: ''
+      });
+    }
+
+    var entries = [];
+    var keys = Object.keys(groupsMap);
+    for (var k = 0; k < keys.length; k++) {
+      var g = groupsMap[keys[k]];
+      saveItems_(g.id, g.items);
+      var totals = computeTotals_(g.items);
+      entries.push({
+        id: g.id,
+        projectId: projectId,
+        type: g.type,
+        group: g.group,
+        category: g.category,
+        itemsCount: totals.itemsCount,
+        totalSum: totals.totalSum,
+        updatedAt: new Date().toISOString()
+      });
+    }
+
+    saveEntries_(projectId, entries);
+    recalcProjectTotals_(projectId);
+
+    return findProjectById_(projectId);
   } finally {
     lock.releaseLock();
   }
@@ -123,7 +222,7 @@ function duplicateProject(projectId) {
 
     var newId = Utilities.getUuid();
     var list = loadProjects_();
-    var p = { id: newId, name: String(src.name || '').trim() + ' (копия)', itemsCount: 0, totalSum: 0, updatedAt: new Date().toISOString() };
+    var p = { id: newId, name: String(src.name || '').trim() + ' (копия)', tariff: String(src.tariff || 'Обычный'), itemsCount: 0, totalSum: 0, updatedAt: new Date().toISOString() };
     list.push(p);
     saveProjects_(list);
 
@@ -273,7 +372,8 @@ function getEntryItemsBootstrap(entryId) {
     categories: ref.categories,
     positionsByCategory: ref.positionsByCategory,
     types: ref.types,
-    pricesByPosition: ref.pricesByPosition
+    pricesByPosition: ref.pricesByPosition,
+    clientsDbRows: readClientsDbRows_()
   };
 }
 
@@ -407,6 +507,55 @@ function readRef_() {
   types.sort(function(x, y) { return x.localeCompare(y, 'ru'); });
 
   return { categories: categories, positionsByCategory: map, types: types, pricesByPosition: pricesMap };
+}
+
+function readClientsDbRows_() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName(CLIENTS_DB_SHEET_NAME);
+  if (!sh) return [];
+
+  var lastRow = sh.getLastRow();
+  var lastCol = sh.getLastColumn();
+  if (lastRow < 2 || lastCol < 12) return [];
+
+  var values = sh.getRange(2, 1, lastRow - 1, 12).getValues();
+  var out = [];
+  for (var i = 0; i < values.length; i++) {
+    var r = values[i] || [];
+    var dateRaw = r[0];
+    var date = '';
+    if (Object.prototype.toString.call(dateRaw) === '[object Date]' && !isNaN(dateRaw.getTime())) {
+      date = Utilities.formatDate(dateRaw, Session.getScriptTimeZone(), 'dd.MM.yyyy');
+    } else {
+      date = String(dateRaw || '').trim();
+    }
+
+    var client = String(r[1] || '').trim();
+    var project = String(r[2] || '').trim();
+    var category = String(r[3] || '').trim();
+    var type = String(r[4] || '').trim();
+    var group = String(r[5] || '').trim();
+    var position = String(r[6] || '').trim();
+
+    if (!date || !client || !project || !category || !type || !position) continue;
+
+    out.push({
+      date: date,
+      client: client,
+      project: project,
+      category: category,
+      type: type,
+      group: group,
+      position: position,
+      qty: toNumber_(r[7], 0),
+      halls: toNumber_(r[8], 0),
+      days: toNumber_(r[9], 0),
+      coef: toNumber_(r[10], 1),
+      unitCost: toNumber_(r[11], 0)
+    });
+  }
+
+  return out;
 }
 
 function listProjects_() {
