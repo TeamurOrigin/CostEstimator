@@ -127,11 +127,11 @@ function exportProjectToClientSheet(projectId) {
     if (!entries.length) return { ok: true, rows: 0, sheetName: '' };
 
     entries.sort(function(a, b) {
-      var at = String(a.type || '').localeCompare(String(b.type || ''), 'ru');
-      if (at) return at;
       var ag = String(a.group || '').localeCompare(String(b.group || ''), 'ru');
       if (ag) return ag;
-      return String(a.category || '').localeCompare(String(b.category || ''), 'ru');
+      var ac = String(a.category || '').localeCompare(String(b.category || ''), 'ru');
+      if (ac) return ac;
+      return String(a.type || '').localeCompare(String(b.type || ''), 'ru');
     });
 
     var client = String(project.client || '').trim();
@@ -141,26 +141,80 @@ function exportProjectToClientSheet(projectId) {
     var ss = SpreadsheetApp.getActive();
     var sh = ss.insertSheet(sheetName);
 
+    sh.setHiddenGridlines(false);
+    sh.setColumnWidths(2, 1, 420); // B
+    sh.setColumnWidths(3, 4, 56);  // C-F
+    sh.setColumnWidths(7, 2, 120); // G-H
+    sh.setColumnWidths(9, 1, 620); // I
+
     sh.getRange('B1:H3').merge();
     sh.getRange('B1').setValue((client ? client + ' — ' : '') + projectName);
-    sh.getRange('B1').setHorizontalAlignment('center').setVerticalAlignment('middle').setFontWeight('bold').setFontSize(16);
+    sh.getRange('B1:H3')
+      .setHorizontalAlignment('left')
+      .setVerticalAlignment('middle')
+      .setFontWeight('bold')
+      .setFontSize(18)
+      .setFontFamily('Arial');
 
     sh.getRange(4, 2, 1, 8).setValues([['Наименование позиции', 'Кол-во', 'Залов', 'Дней', 'Коэф.', 'Стоимость за ед.', 'Итоговая стоимость', 'Комментарии']]);
-    sh.getRange(4, 2, 1, 8).setFontWeight('bold').setHorizontalAlignment('center');
+    sh.getRange(4, 2, 1, 8)
+      .setFontWeight('bold')
+      .setFontFamily('Arial')
+      .setFontSize(11)
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle')
+      .setBorder(true, true, true, true, true, true, '#d0d0d0', SpreadsheetApp.BorderStyle.SOLID);
 
-    var row = 5;
+    sh.getRange(5, 2, 1, 8).merge();
+    sh.getRange(5, 2)
+      .setValue(String(projectName || 'Проект'))
+      .setFontWeight('bold')
+      .setFontSize(22)
+      .setFontFamily('Arial')
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle')
+      .setBackground('#3f3f3f')
+      .setFontColor('#ffffff');
+    sh.setRowHeight(5, 40);
+
+    var row = 6;
     var rowsCount = 0;
+    var currentGroup = '';
+    var currentCategory = '';
 
     for (var e = 0; e < entries.length; e++) {
       var entry = entries[e] || {};
-      sh.getRange(row, 2, 1, 8).merge();
-      sh.getRange(row, 2).setValue(String(entry.type || '') + (entry.group ? ' • ' + String(entry.group) : '')).setFontWeight('bold');
-      row++;
+      var groupLabel = String(entry.group || '').trim();
+      var categoryLabel = String(entry.category || '').trim();
 
-      if (entry.category) {
+      if (groupLabel && groupLabel !== currentGroup) {
         sh.getRange(row, 2, 1, 8).merge();
-        sh.getRange(row, 2).setValue(String(entry.category)).setFontStyle('italic').setFontColor('#6b7280');
+        sh.getRange(row, 2)
+          .setValue(groupLabel)
+          .setFontWeight('bold')
+          .setFontSize(24)
+          .setFontFamily('Arial')
+          .setHorizontalAlignment('center')
+          .setVerticalAlignment('middle');
+        sh.setRowHeight(row, 34);
         row++;
+        currentGroup = groupLabel;
+        currentCategory = '';
+      }
+
+      if (categoryLabel && categoryLabel !== currentCategory) {
+        sh.getRange(row, 2, 1, 8).merge();
+        sh.getRange(row, 2)
+          .setValue(categoryLabel)
+          .setFontStyle('italic')
+          .setFontColor('#9ca3af')
+          .setFontSize(16)
+          .setFontFamily('Arial')
+          .setHorizontalAlignment('center')
+          .setVerticalAlignment('middle');
+        sh.setRowHeight(row, 26);
+        row++;
+        currentCategory = categoryLabel;
       }
 
       var items = normalizeItems_(loadItems_(String(entry.id)));
@@ -168,15 +222,25 @@ function exportProjectToClientSheet(projectId) {
         var it = items[i] || {};
         var lineTotal = toNumber_(it.qty, 0) * toNumber_(it.halls, 0) * toNumber_(it.days, 0) * toNumber_(it.eventDays, 1) * toNumber_(it.coef, 1) * toNumber_(it.unitCost, 0);
         sh.getRange(row, 2, 1, 8).setValues([[String(it.position || ''), toNumber_(it.qty, 0), toNumber_(it.halls, 0), toNumber_(it.days, 0), toNumber_(it.coef, 1), toNumber_(it.unitCost, 0), lineTotal, String(it.comment || '')]]);
+        sh.setRowHeight(row, 29);
         row++;
         rowsCount++;
       }
     }
 
-    sh.getRange(5, 3, Math.max(row - 5, 1), 5).setHorizontalAlignment('center');
-    sh.getRange(5, 7, Math.max(row - 5, 1), 2).setNumberFormat('#,##0.00');
-    sh.setFrozenRows(4);
-    sh.autoResizeColumns(2, 8);
+    var dataRows = Math.max(row - 6, 1);
+    sh.getRange(6, 2, dataRows, 8)
+      .setFontFamily('Arial')
+      .setFontSize(11)
+      .setVerticalAlignment('middle')
+      .setBorder(true, true, true, true, true, true, '#d0d0d0', SpreadsheetApp.BorderStyle.SOLID);
+
+    sh.getRange(6, 3, dataRows, 5).setHorizontalAlignment('center');
+    sh.getRange(6, 7, dataRows, 2).setNumberFormat('#,##0"₽"');
+    sh.getRange(6, 2, dataRows, 1).setHorizontalAlignment('left');
+    sh.getRange(6, 9, dataRows, 1).setHorizontalAlignment('left');
+
+    sh.setFrozenRows(5);
 
     return { ok: true, rows: rowsCount, sheetName: sheetName };
   } finally {
