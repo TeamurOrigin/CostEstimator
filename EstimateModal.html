@@ -344,6 +344,12 @@
             </div>
           </div>
 
+          <div style="margin-bottom:10px">
+            <label>Клиент</label>
+            <input id="newClientName" list="clientsSuggestions" placeholder="Выберите или введите клиента">
+            <datalist id="clientsSuggestions"></datalist>
+          </div>
+
           <div style="margin-bottom:12px">
             <label>Наименование проекта</label>
             <input id="newProjectName" placeholder="Например: Энергетики">
@@ -663,10 +669,44 @@
     return out;
   }
 
+  function getKnownClients(){
+    var fromDb = getImportRows().map(function(r){ return r.client; });
+    var fromProjects = arr(boot && boot.projects).map(function(p){ return p && p.client ? p.client : ''; });
+    return uniqSorted(fromDb.concat(fromProjects));
+  }
+
+  function refreshClientSuggestions(){
+    var dl = $('clientsSuggestions');
+    if(!dl) return;
+    var list = getKnownClients();
+    dl.innerHTML='';
+    for(var i=0;i<list.length;i++){
+      var opt=document.createElement('option');
+      opt.value=list[i];
+      dl.appendChild(opt);
+    }
+  }
+
+  function syncClientInputWithMode(){
+    var input = $('newClientName');
+    if(!input) return;
+    var mode = projectModeDD && projectModeDD.getValue ? projectModeDD.getValue() : 'Новый клиент';
+    if(mode==='Текущий клиент'){
+      var selected = existingClientDD && existingClientDD.getValue ? existingClientDD.getValue() : '';
+      input.value = (selected==='—' ? '' : selected);
+      input.readOnly = true;
+      input.placeholder='Клиент выбранного проекта';
+    } else {
+      input.readOnly = false;
+      input.placeholder='Выберите или введите клиента';
+    }
+  }
+
   function setCreateButtonByMode(){
     var mode = projectModeDD && projectModeDD.getValue ? projectModeDD.getValue() : 'Новый клиент';
     $('btnCreateProject').textContent = (mode==='Текущий клиент' ? 'Импорт' : 'Новая смета');
     $('existingProjectSelectors').classList.toggle('hidden', mode!=='Текущий клиент');
+    syncClientInputWithMode();
   }
 
   function initProjectModeDropdown(){
@@ -696,8 +736,9 @@
     var currentClient=existingClientDD && existingClientDD.getValue ? existingClientDD.getValue() : clients[0];
     if(clients.indexOf(currentClient)===-1) currentClient=clients[0]||'';
 
-    existingClientDD=createDropdown(clients.length?clients:['—'], currentClient||'—', function(){ refreshExistingProjectDropdown(); }, {searchable:true, searchPlaceholder:'Найти клиента…'});
+    existingClientDD=createDropdown(clients.length?clients:['—'], currentClient||'—', function(){ syncClientInputWithMode(); refreshExistingProjectDropdown(); }, {searchable:true, searchPlaceholder:'Найти клиента…'});
     clientMount.appendChild(existingClientDD.btn);
+    syncClientInputWithMode();
     refreshExistingProjectDropdown();
   }
 
@@ -808,9 +849,12 @@
 
         var td1=document.createElement('td');
         var name=document.createElement('div');name.style.fontWeight='950';name.textContent=p.name||'';
+        var client=document.createElement('div');client.style.marginTop='2px';client.style.fontSize='10.5px';client.style.color='rgba(149,166,199,.92)';
+        client.textContent=(p.client||'');
         var tariff=document.createElement('div');tariff.style.marginTop='2px';tariff.style.fontSize='10.5px';tariff.style.color='rgba(149,166,199,.78)';
         tariff.textContent=(p.tariff||'');
         td1.appendChild(name);
+        if(p.client) td1.appendChild(client);
         if(p.tariff) td1.appendChild(tariff);
 
         var td2=document.createElement('td');td2.className='center';td2.textContent=String(Number(p.itemsCount||0));
@@ -938,6 +982,7 @@
       boot=data;
 
       initEntryDropdowns(arr(boot.types), arr(boot.categories));
+      refreshClientSuggestions();
       refreshExistingClientDropdowns();
 
       renderProjects();
@@ -981,10 +1026,12 @@
   function createProject(btn){
     var mode=(projectModeDD && projectModeDD.getValue ? projectModeDD.getValue() : 'Новый клиент');
     var name=$('newProjectName').value.trim();
+    var clientName=$('newClientName').value.trim();
     var tariff=(tariffDD && tariffDD.getValue ? tariffDD.getValue().trim() : '');
 
     if(mode==='Текущий клиент'){
       var client=(existingClientDD && existingClientDD.getValue ? existingClientDD.getValue().trim() : '');
+      clientName = client;
       var project=(existingProjectDD && existingProjectDD.getValue ? existingProjectDD.getValue().trim() : '');
       var date=(existingDateDD && existingDateDD.getValue ? existingDateDD.getValue().trim() : '');
       if(!client || client==='—'){ setStatus('Укажите клиента'); return; }
@@ -995,17 +1042,20 @@
 
       callGs(btn,'Импорт проекта…','importExistingProject',[{name:name, tariff:tariff, client:client, project:project, date:date}],function(p){
         $('newProjectName').value='';
+        $('newClientName').value='';
         if(tariffDD && tariffDD.setValue) tariffDD.setValue('Обычный');
         refreshAll(null,function(){ selectProject(p.id); });
       });
       return;
     }
 
+    if(!clientName){ setStatus('Укажите клиента'); return; }
     if(!name){ setStatus('Укажите наименование проекта'); return; }
     if(!tariff){ setStatus('Укажите тариф'); return; }
 
-    callGs(btn,'Создание проекта…','createProject',[{name:name, tariff:tariff}],function(p){
+    callGs(btn,'Создание проекта…','createProject',[{name:name, client:clientName, tariff:tariff}],function(p){
       $('newProjectName').value='';
+      $('newClientName').value='';
       if(tariffDD && tariffDD.setValue) tariffDD.setValue('Обычный');
       refreshAll(null,function(){ selectProject(p.id); });
     });
@@ -1023,7 +1073,7 @@
     callGs(btn,'Удаление проекта…','deleteProject',[id],function(){
       if(String(id)===String(selectedProjectId)){ selectedProjectId=''; selectedProject=null; entries=[]; }
       updateExportButton();
-    refreshAll(null);
+      refreshAll(null);
     });
   }
 
@@ -1056,6 +1106,8 @@
   function init(){
     initTariffDropdown();
     initProjectModeDropdown();
+    refreshClientSuggestions();
+    syncClientInputWithMode();
 
     $('btnRefresh').addEventListener('click', function(e){ refreshAll(e.currentTarget); });
     $('btnCreateProject').addEventListener('click', function(e){ createProject(e.currentTarget); });

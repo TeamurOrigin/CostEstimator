@@ -123,12 +123,13 @@ function createProject(payload) {
     var name = String(payload && payload.name ? payload.name : '').trim();
     if (!name) throw new Error('Укажите наименование проекта.');
 
+    var client = String(payload && payload.client ? payload.client : '').trim();
     var tariff = String(payload && payload.tariff ? payload.tariff : '').trim();
     if (!tariff) tariff = 'Обычный';
 
     var list = loadProjects_();
     var id = Utilities.getUuid();
-    var p = { id: id, name: name, client: '', tariff: tariff, itemsCount: 0, totalSum: 0, updatedAt: new Date().toISOString() };
+    var p = { id: id, name: name, client: client, tariff: tariff, itemsCount: 0, totalSum: 0, updatedAt: new Date().toISOString() };
     list.push(p);
     saveProjects_(list);
     saveEntries_(id, []);
