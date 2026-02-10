@@ -1,4 +1,3 @@
-<!-- EstimateItemsModal.html -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -41,7 +40,6 @@
     .btn.red{border-color:rgba(239,68,68,.45);box-shadow:0 0 0 3px rgba(239,68,68,.08), inset 0 1px 0 rgba(255,255,255,.05)}
     .mini{height:30px;border-radius:11px}
 
-    /* Busy indicator (pulse only, no spinner) */
     @keyframes btnPulse {
       0%,100% { transform:translateY(0); filter:brightness(1.02); }
       50% { transform:translateY(-1px); filter:brightness(1.09); }
@@ -113,7 +111,6 @@
     .sumBar{margin-top:10px;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border2);border-radius:14px;background:linear-gradient(180deg, rgba(2,6,23,.34), rgba(2,6,23,.22));font-weight:950;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
     .sumBar .m{font-weight:950;color:rgba(149,166,199,.85);font-size:11px}
 
-    /* ===== POPUPS (comment + unsaved) ===== */
     body.modal-open .wrap{pointer-events:none;user-select:none}
     body.modal-open .overlay{pointer-events:auto}
 
@@ -220,7 +217,6 @@
     </div>
   </div>
 
-  <!-- COMMENT POPUP -->
   <div class="overlay" id="cOverlay" aria-hidden="true">
     <div class="modal" id="cModal" role="dialog" aria-modal="true">
       <div class="mh">
@@ -241,7 +237,6 @@
     </div>
   </div>
 
-  <!-- UNSAVED CHANGES POPUP -->
   <div class="overlay" id="uOverlay" aria-hidden="true">
     <div class="modal unsaved" id="uModal" role="dialog" aria-modal="true">
       <div class="mh">
@@ -376,7 +371,6 @@
     }
   }
 
-  // Универсальная обёртка: любая async-операция через google.script.run + пульсация на тех кнопках, что вы передали.
   function runGs_(busyBtns, fnName, args, ok, fail, opts){
     busyBtns = arr(busyBtns);
     opts = opts || {};
@@ -901,14 +895,12 @@
 
     $('uCancel').addEventListener('click', closeUnsaved_);
 
-    // Нажали "Не сохранять" — идём назад, и именно эта кнопка пульсирует, пока идёт переход
     $('uNo').addEventListener('click', function(){
       if(saving) return;
       closeUnsaved_();
       back_([this, $('btnBack')]);
     });
 
-    // Нажали "Сохранить" в попапе — пульсируют и попап-кнопка, и верхняя "Сохранить"
     $('uYes').addEventListener('click', function(){
       if(saving) return;
 
@@ -919,7 +911,6 @@
         setUnsavedButtonsDisabled_(false);
         if(err) return;
         closeUnsaved_();
-        // продолжить переход — пусть продолжит пульсировать та же кнопка
         back_(busyBtns.concat([$ ('btnBack')]));
       }, busyBtns);
     });
