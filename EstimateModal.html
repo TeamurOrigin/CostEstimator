@@ -237,6 +237,33 @@
       overflow:auto;
     }
 
+
+    .type-dd-search-wrap{
+      position:sticky;
+      top:0;
+      z-index:2;
+      padding:4px;
+      background:linear-gradient(180deg, rgba(15,23,42,.94), rgba(15,23,42,.78));
+      border-bottom:1px solid rgba(148,163,184,.12);
+      margin:-4px -4px 4px;
+      border-radius:12px 12px 0 0;
+    }
+    .type-dd-search{
+      width:100%;
+      height:30px;
+      padding:6px 8px;
+      border-radius:9px;
+      border:1px solid rgba(148,163,184,.28);
+      background:rgba(2,6,23,.55);
+      color:var(--text);
+      font-size:12px;
+      font-weight:700;
+    }
+    .type-dd-empty{
+      padding:8px;
+      color:var(--muted);
+      font-size:11px;
+    }
     .type-dd-item{
       display:flex;
       align-items:center;
@@ -449,7 +476,10 @@
 
   var activeDropdownCloser=null;
 
-  function createDropdown(options, initial, onSelect){
+  function createDropdown(options, initial, onSelect, cfg){
+    cfg = cfg || {};
+    var searchable = !!cfg.searchable;
+    var searchPlaceholder = cfg.searchPlaceholder || 'Поиск…';
     var value = (initial!=null ? String(initial) : (options && options[0] ? String(options[0]) : ''));
     var btn = document.createElement('button');
     btn.type='button';
@@ -463,66 +493,127 @@
     function openPanel(){
       closeActive();
 
-      var rect = btn.getBoundingClientRect();
       var panel = document.createElement('div');
       panel.className='type-dd-panel';
-      panel.style.left = Math.round(rect.left) + 'px';
-      panel.style.top = Math.round(rect.bottom + 6) + 'px';
-      panel.style.width = Math.round(rect.width) + 'px';
 
-      for(var i=0;i<options.length;i++){
-        (function(opt){
-          var item=document.createElement('div');
-          item.className='type-dd-item' + (String(opt)===String(value) ? ' is-active' : '');
-          item.tabIndex=0;
+      var searchInput = null;
+      var itemsBox = panel;
+      var optionsList = Array.isArray(options) ? options.slice() : [];
 
-          var label=document.createElement('span');
-          label.textContent=String(opt);
-
-          var right=document.createElement('span');
-          right.className='type-dd-check';
-          right.textContent=(String(opt)===String(value)) ? '✓' : '';
-
-          item.appendChild(label);
-          item.appendChild(right);
-
-          item.addEventListener('click', function(){
-            setValue(opt);
-            if(onSelect) onSelect(String(opt));
-            closePanel();
-          });
-
-          panel.appendChild(item);
-        })(options[i]);
+      function setPanelPosition(){
+        var rect = btn.getBoundingClientRect();
+        panel.style.left = Math.round(rect.left) + 'px';
+        panel.style.top = Math.round(rect.bottom + 6) + 'px';
+        panel.style.width = Math.round(rect.width) + 'px';
       }
 
+      function scrollSelectedIntoView(){
+        var active = panel.querySelector('.type-dd-item.is-active');
+        if(active){
+          active.scrollIntoView({block:'nearest'});
+        }
+      }
+
+      function renderList(filterText){
+        var text = String(filterText || '').trim().toLowerCase();
+        itemsBox.innerHTML='';
+        var hasItems = false;
+
+        for(var i=0;i<optionsList.length;i++){
+          var opt = String(optionsList[i] || '');
+          if(text && opt.toLowerCase().indexOf(text)===-1) continue;
+          hasItems = true;
+
+          (function(rawOpt){
+            var item=document.createElement('div');
+            item.className='type-dd-item' + (String(rawOpt)===String(value) ? ' is-active' : '');
+            item.tabIndex=0;
+
+            var label=document.createElement('span');
+            label.textContent=String(rawOpt);
+
+            var right=document.createElement('span');
+            right.className='type-dd-check';
+            right.textContent=(String(rawOpt)===String(value)) ? '✓' : '';
+
+            item.appendChild(label);
+            item.appendChild(right);
+
+            item.addEventListener('click', function(){
+              setValue(rawOpt);
+              if(onSelect) onSelect(String(rawOpt));
+              closePanel();
+            });
+
+            itemsBox.appendChild(item);
+          })(opt);
+        }
+
+        if(!hasItems){
+          var empty = document.createElement('div');
+          empty.className='type-dd-empty';
+          empty.textContent='Ничего не найдено';
+          itemsBox.appendChild(empty);
+        }
+      }
+
+      if(searchable){
+        var searchWrap = document.createElement('div');
+        searchWrap.className='type-dd-search-wrap';
+        searchInput = document.createElement('input');
+        searchInput.type='text';
+        searchInput.className='type-dd-search';
+        searchInput.placeholder=searchPlaceholder;
+        searchWrap.appendChild(searchInput);
+        panel.appendChild(searchWrap);
+
+        itemsBox = document.createElement('div');
+        panel.appendChild(itemsBox);
+
+        searchInput.addEventListener('input', function(){
+          renderList(searchInput.value);
+        });
+      }
+
+      renderList('');
       document.body.appendChild(panel);
+      setPanelPosition();
+      scrollSelectedIntoView();
 
       var onDocDown = function(e){
         if(e.target===btn) return;
         if(panel.contains(e.target)) return;
         closePanel();
       };
+
       var onKeyDown = function(e){
-        if(e.key==='Escape') closePanel();
+        if(e.key==='Escape'){
+          closePanel();
+        }
       };
 
-      var wrap = document.querySelector('.wrap');
-      var onScroll = function(){ closePanel(); };
+      var onResizeOrScroll = function(){
+        if(!panel || !panel.parentNode) return;
+        setPanelPosition();
+      };
 
       function closePanel(){
         document.removeEventListener('mousedown', onDocDown, true);
         document.removeEventListener('keydown', onKeyDown, true);
-        window.removeEventListener('scroll', onScroll, true);
-        if(wrap) wrap.removeEventListener('scroll', onScroll, true);
+        window.removeEventListener('resize', onResizeOrScroll, true);
+        window.removeEventListener('scroll', onResizeOrScroll, true);
         if(panel && panel.parentNode) panel.parentNode.removeChild(panel);
         activeDropdownCloser=null;
       }
 
       document.addEventListener('mousedown', onDocDown, true);
       document.addEventListener('keydown', onKeyDown, true);
-      window.addEventListener('scroll', onScroll, true);
-      if(wrap) wrap.addEventListener('scroll', onScroll, true);
+      window.addEventListener('resize', onResizeOrScroll, true);
+      window.addEventListener('scroll', onResizeOrScroll, true);
+
+      if(searchInput){
+        setTimeout(function(){ searchInput.focus(); searchInput.select(); }, 0);
+      }
 
       activeDropdownCloser = closePanel;
     }
@@ -596,7 +687,7 @@
     var currentClient=existingClientDD && existingClientDD.getValue ? existingClientDD.getValue() : clients[0];
     if(clients.indexOf(currentClient)===-1) currentClient=clients[0]||'';
 
-    existingClientDD=createDropdown(clients.length?clients:['—'], currentClient||'—', function(){ refreshExistingProjectDropdown(); });
+    existingClientDD=createDropdown(clients.length?clients:['—'], currentClient||'—', function(){ refreshExistingProjectDropdown(); }, {searchable:true, searchPlaceholder:'Найти клиента…'});
     clientMount.appendChild(existingClientDD.btn);
     refreshExistingProjectDropdown();
   }
@@ -615,7 +706,7 @@
     var currentProject=existingProjectDD && existingProjectDD.getValue ? existingProjectDD.getValue() : projects[0];
     if(projects.indexOf(currentProject)===-1) currentProject=projects[0]||'';
 
-    existingProjectDD=createDropdown(projects.length?projects:['—'], currentProject||'—', function(){ refreshExistingDateDropdown(); });
+    existingProjectDD=createDropdown(projects.length?projects:['—'], currentProject||'—', function(){ refreshExistingDateDropdown(); }, {searchable:true, searchPlaceholder:'Найти проект…'});
     projectMount.appendChild(existingProjectDD.btn);
     refreshExistingDateDropdown();
   }
@@ -634,7 +725,7 @@
     var currentDate=existingDateDD && existingDateDD.getValue ? existingDateDD.getValue() : dates[0];
     if(dates.indexOf(currentDate)===-1) currentDate=dates[0]||'';
 
-    existingDateDD=createDropdown(dates.length?dates:['—'], currentDate||'—', function(){});
+    existingDateDD=createDropdown(dates.length?dates:['—'], currentDate||'—', function(){}, {searchable:true, searchPlaceholder:'Найти дату…'});
     dateMount.appendChild(existingDateDD.btn);
   }
 
