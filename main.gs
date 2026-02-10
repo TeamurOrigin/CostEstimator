@@ -1,4 +1,5 @@
 var REF_SHEET_NAME = 'Справочник сметы';
+var CLIENTS_DB_SHEET_NAME = 'БД сметы';
 
 var PROJECTS_STORE_KEY = 'cs_projects_v3';
 var ENTRIES_STORE_PREFIX = 'cs_entries_v3_';
@@ -45,7 +46,8 @@ function getBootstrapData() {
     categories: ref.categories,
     positionsByCategory: ref.positionsByCategory,
     types: ref.types,
-    pricesByPosition: ref.pricesByPosition
+    pricesByPosition: ref.pricesByPosition,
+    clientsDbRows: readClientsDbRows_()
   };
 }
 
@@ -64,6 +66,124 @@ function getProjectEntries(projectId) {
   return { project: project, entries: entries };
 }
 
+function exportProjectToDraft(projectId) {
+  var lock = LockService.getDocumentLock();
+  lock.waitLock(10000);
+  try {
+    ensureCoreSheets_();
+    var project = findProjectById_(projectId);
+    if (!project) throw new Error('Проект не найден.');
+
+    var entries = loadEntries_(projectId);
+    if (!entries.length) return { ok: true, rows: 0 };
+
+    var rows = [];
+    var exportDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM.yyyy');
+    var client = String(project.client || '').trim();
+    var projectName = String(project.name || '').trim();
+
+    for (var e = 0; e < entries.length; e++) {
+      var entry = entries[e] || {};
+      var items = normalizeItems_(loadItems_(String(entry.id)));
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i] || {};
+        rows.push([
+          exportDate,
+          client,
+          projectName,
+          String(entry.type || ''),
+          String(entry.group || ''),
+          String(entry.category || ''),
+          String(it.position || ''),
+          toNumber_(it.qty, 0),
+          toNumber_(it.halls, 0),
+          toNumber_(it.days, 0),
+          toNumber_(it.coef, 1),
+          toNumber_(it.unitCost, 0)
+        ]);
+      }
+    }
+
+    if (!rows.length) return { ok: true, rows: 0 };
+
+    var sh = getOrCreateDraftSheet_();
+    var startRow = sh.getLastRow() + 1;
+    sh.getRange(startRow, 1, rows.length, 12).setValues(rows);
+    return { ok: true, rows: rows.length };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function exportProjectToClientSheet(projectId) {
+  var lock = LockService.getDocumentLock();
+  lock.waitLock(10000);
+  try {
+    ensureCoreSheets_();
+    var project = findProjectById_(projectId);
+    if (!project) throw new Error('Проект не найден.');
+
+    var entries = loadEntries_(projectId);
+    if (!entries.length) return { ok: true, rows: 0, sheetName: '' };
+
+    entries.sort(function(a, b) {
+      var at = String(a.type || '').localeCompare(String(b.type || ''), 'ru');
+      if (at) return at;
+      var ag = String(a.group || '').localeCompare(String(b.group || ''), 'ru');
+      if (ag) return ag;
+      return String(a.category || '').localeCompare(String(b.category || ''), 'ru');
+    });
+
+    var client = String(project.client || '').trim();
+    var projectName = String(project.name || '').trim();
+    var sheetName = makeUniqueSheetName_(buildClientProjectSheetName_(client, projectName));
+
+    var ss = SpreadsheetApp.getActive();
+    var sh = ss.insertSheet(sheetName);
+
+    sh.getRange('B1:H3').merge();
+    sh.getRange('B1').setValue((client ? client + ' — ' : '') + projectName);
+    sh.getRange('B1').setHorizontalAlignment('center').setVerticalAlignment('middle').setFontWeight('bold').setFontSize(16);
+
+    sh.getRange(4, 2, 1, 8).setValues([['Наименование позиции', 'Кол-во', 'Залов', 'Дней', 'Коэф.', 'Стоимость за ед.', 'Итоговая стоимость', 'Комментарии']]);
+    sh.getRange(4, 2, 1, 8).setFontWeight('bold').setHorizontalAlignment('center');
+
+    var row = 5;
+    var rowsCount = 0;
+
+    for (var e = 0; e < entries.length; e++) {
+      var entry = entries[e] || {};
+      sh.getRange(row, 2, 1, 8).merge();
+      sh.getRange(row, 2).setValue(String(entry.type || '') + (entry.group ? ' • ' + String(entry.group) : '')).setFontWeight('bold');
+      row++;
+
+      if (entry.category) {
+        sh.getRange(row, 2, 1, 8).merge();
+        sh.getRange(row, 2).setValue(String(entry.category)).setFontStyle('italic').setFontColor('#6b7280');
+        row++;
+      }
+
+      var items = normalizeItems_(loadItems_(String(entry.id)));
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i] || {};
+        var lineTotal = toNumber_(it.qty, 0) * toNumber_(it.halls, 0) * toNumber_(it.days, 0) * toNumber_(it.eventDays, 1) * toNumber_(it.coef, 1) * toNumber_(it.unitCost, 0);
+        sh.getRange(row, 2, 1, 8).setValues([[String(it.position || ''), toNumber_(it.qty, 0), toNumber_(it.halls, 0), toNumber_(it.days, 0), toNumber_(it.coef, 1), toNumber_(it.unitCost, 0), lineTotal, String(it.comment || '')]]);
+        row++;
+        rowsCount++;
+      }
+    }
+
+    sh.getRange(5, 3, Math.max(row - 5, 1), 5).setHorizontalAlignment('center');
+    sh.getRange(5, 7, Math.max(row - 5, 1), 2).setNumberFormat('#,##0.00');
+    sh.setFrozenRows(4);
+    sh.autoResizeColumns(2, 8);
+
+    return { ok: true, rows: rowsCount, sheetName: sheetName };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function createProject(payload) {
   var lock = LockService.getDocumentLock();
   lock.waitLock(10000);
@@ -72,13 +192,112 @@ function createProject(payload) {
     var name = String(payload && payload.name ? payload.name : '').trim();
     if (!name) throw new Error('Укажите наименование проекта.');
 
+    var client = String(payload && payload.client ? payload.client : '').trim();
+    var tariff = String(payload && payload.tariff ? payload.tariff : '').trim();
+    if (!tariff) tariff = 'Обычный';
+
     var list = loadProjects_();
     var id = Utilities.getUuid();
-    var p = { id: id, name: name, itemsCount: 0, totalSum: 0, updatedAt: new Date().toISOString() };
+    var p = { id: id, name: name, client: client, tariff: tariff, itemsCount: 0, totalSum: 0, updatedAt: new Date().toISOString() };
     list.push(p);
     saveProjects_(list);
     saveEntries_(id, []);
     return p;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function importExistingProject(payload) {
+  var lock = LockService.getDocumentLock();
+  lock.waitLock(10000);
+  try {
+    ensureCoreSheets_();
+
+    var name = String(payload && payload.name ? payload.name : '').trim();
+    var tariff = String(payload && payload.tariff ? payload.tariff : '').trim();
+    var client = String(payload && payload.client ? payload.client : '').trim();
+    var project = String(payload && payload.project ? payload.project : '').trim();
+    var date = String(payload && payload.date ? payload.date : '').trim();
+
+    if (!name) throw new Error('Укажите наименование проекта.');
+    if (!tariff) tariff = 'Обычный';
+    if (!client || !project || !date) throw new Error('Не выбраны данные клиента для импорта.');
+
+    var rows = readClientsDbRows_().filter(function(r) {
+      return String(r.client) === client && String(r.project) === project && String(r.date) === date;
+    });
+    if (!rows.length) throw new Error('По выбранным клиенту/проекту/дате данные не найдены.');
+
+    var projects = loadProjects_();
+    var projectId = Utilities.getUuid();
+    var newProject = {
+      id: projectId,
+      name: name,
+      client: client,
+      tariff: tariff,
+      itemsCount: 0,
+      totalSum: 0,
+      updatedAt: new Date().toISOString()
+    };
+    projects.push(newProject);
+    saveProjects_(projects);
+
+    var groupsMap = {};
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i] || {};
+      var type = String(row.type || '').trim();
+      var group = String(row.group || '').trim();
+      var category = String(row.category || '').trim();
+      var position = String(row.position || '').trim();
+      if (!type || !category || !position) continue;
+
+      var key = [type, group, category].join('|||');
+      if (!groupsMap[key]) {
+        groupsMap[key] = {
+          id: Utilities.getUuid(),
+          projectId: projectId,
+          type: type,
+          group: group,
+          category: category,
+          items: []
+        };
+      }
+
+      groupsMap[key].items.push({
+        position: position,
+        qty: toNumber_(row.qty, 0),
+        halls: toNumber_(row.halls, 0),
+        days: toNumber_(row.days, 0),
+        eventDays: 1,
+        coef: toNumber_(row.coef, 1),
+        unitCost: toNumber_(row.unitCost, 0),
+        comment: ''
+      });
+    }
+
+    var entries = [];
+    var keys = Object.keys(groupsMap);
+    for (var k = 0; k < keys.length; k++) {
+      var g = groupsMap[keys[k]];
+      saveItems_(g.id, g.items);
+      var totals = computeTotals_(g.items);
+      entries.push({
+        id: g.id,
+        projectId: projectId,
+        type: g.type,
+        group: g.group,
+        category: g.category,
+        itemsCount: totals.itemsCount,
+        totalSum: totals.totalSum,
+        updatedAt: new Date().toISOString()
+      });
+    }
+
+    saveEntries_(projectId, entries);
+    recalcProjectTotals_(projectId);
+
+    return findProjectById_(projectId);
   } finally {
     lock.releaseLock();
   }
@@ -123,7 +342,7 @@ function duplicateProject(projectId) {
 
     var newId = Utilities.getUuid();
     var list = loadProjects_();
-    var p = { id: newId, name: String(src.name || '').trim() + ' (копия)', itemsCount: 0, totalSum: 0, updatedAt: new Date().toISOString() };
+    var p = { id: newId, name: String(src.name || '').trim() + ' (копия)', client: String(src.client || ''), tariff: String(src.tariff || 'Обычный'), itemsCount: 0, totalSum: 0, updatedAt: new Date().toISOString() };
     list.push(p);
     saveProjects_(list);
 
@@ -273,7 +492,8 @@ function getEntryItemsBootstrap(entryId) {
     categories: ref.categories,
     positionsByCategory: ref.positionsByCategory,
     types: ref.types,
-    pricesByPosition: ref.pricesByPosition
+    pricesByPosition: ref.pricesByPosition,
+    clientsDbRows: readClientsDbRows_()
   };
 }
 
@@ -343,6 +563,49 @@ function saveEntryAll(entryId, meta, items) {
   }
 }
 
+function getOrCreateDraftSheet_() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName('Черновик');
+  if (!sh) sh = ss.insertSheet('Черновик');
+
+  var headers = ['Дата', 'Клиент', 'Проект', 'Тип', 'Группа', 'Категория', 'Позиция', 'Кол-во', 'Залов', 'Дней', 'Коэф.', 'Цена'];
+  sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sh.setFrozenRows(1);
+  return sh;
+}
+
+function sanitizeSheetPart_(value) {
+  var out = String(value || '').trim();
+  out = out.replace(/[\\\/\?\*\[\]:]/g, '_');
+  out = out.replace(/\s+/g, ' ');
+  return out;
+}
+
+function buildClientProjectSheetName_(client, projectName) {
+  var c = sanitizeSheetPart_(client) || 'Клиент';
+  var p = sanitizeSheetPart_(projectName) || 'Проект';
+  var base = c + '_' + p;
+  if (base.length > 95) base = base.slice(0, 95);
+  return base;
+}
+
+function makeUniqueSheetName_(baseName) {
+  var ss = SpreadsheetApp.getActive();
+  var base = sanitizeSheetPart_(baseName) || 'Лист экспорта';
+  if (base.length > 95) base = base.slice(0, 95);
+
+  var name = base;
+  var n = 2;
+  while (ss.getSheetByName(name)) {
+    var suffix = ' (' + n + ')';
+    var maxBase = 100 - suffix.length;
+    var shortBase = base.length > maxBase ? base.slice(0, maxBase) : base;
+    name = shortBase + suffix;
+    n++;
+  }
+  return name;
+}
+
 function ensureCoreSheets_() {
   var ss = SpreadsheetApp.getActive();
   if (!ss.getSheetByName(REF_SHEET_NAME)) {
@@ -407,6 +670,85 @@ function readRef_() {
   types.sort(function(x, y) { return x.localeCompare(y, 'ru'); });
 
   return { categories: categories, positionsByCategory: map, types: types, pricesByPosition: pricesMap };
+}
+
+function readClientsDbRows_() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName(CLIENTS_DB_SHEET_NAME);
+  if (!sh) return [];
+
+  var lastRow = sh.getLastRow();
+  var lastCol = sh.getLastColumn();
+  if (lastRow < 2 || lastCol < 12) return [];
+
+  var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0] || [];
+  var headerMap = {};
+  for (var h = 0; h < headers.length; h++) {
+    var key = String(headers[h] || '').trim().toLowerCase();
+    if (!key) continue;
+    headerMap[key] = h;
+  }
+
+  function colIndexByAliases_(aliases, fallbackIndex) {
+    for (var a = 0; a < aliases.length; a++) {
+      var k = String(aliases[a] || '').trim().toLowerCase();
+      if (Object.prototype.hasOwnProperty.call(headerMap, k)) return headerMap[k];
+    }
+    return fallbackIndex;
+  }
+
+  var idxDate = colIndexByAliases_(['дата'], 0);
+  var idxClient = colIndexByAliases_(['клиент'], 1);
+  var idxProject = colIndexByAliases_(['проект'], 2);
+  var idxType = colIndexByAliases_(['тип'], 3);
+  var idxGroup = colIndexByAliases_(['группа'], 4);
+  var idxCategory = colIndexByAliases_(['категория'], 5);
+  var idxPosition = colIndexByAliases_(['позиция', 'наименование'], 6);
+  var idxQty = colIndexByAliases_(['кол-во', 'колво', 'количество'], 7);
+  var idxHalls = colIndexByAliases_(['залов', 'залы'], 8);
+  var idxDays = colIndexByAliases_(['дней', 'дни'], 9);
+  var idxCoef = colIndexByAliases_(['коэф.', 'коэф', 'коэффициент'], 10);
+  var idxPrice = colIndexByAliases_(['цена', 'стоимость'], 11);
+
+  var values = sh.getRange(2, 1, lastRow - 1, lastCol).getValues();
+  var out = [];
+  for (var i = 0; i < values.length; i++) {
+    var r = values[i] || [];
+
+    var dateRaw = r[idxDate];
+    var date = '';
+    if (Object.prototype.toString.call(dateRaw) === '[object Date]' && !isNaN(dateRaw.getTime())) {
+      date = Utilities.formatDate(dateRaw, Session.getScriptTimeZone(), 'dd.MM.yyyy');
+    } else {
+      date = String(dateRaw || '').trim();
+    }
+
+    var client = String(r[idxClient] || '').trim();
+    var project = String(r[idxProject] || '').trim();
+    var type = String(r[idxType] || '').trim();
+    var group = String(r[idxGroup] || '').trim();
+    var category = String(r[idxCategory] || '').trim();
+    var position = String(r[idxPosition] || '').trim();
+
+    if (!date || !client || !project || !type || !position) continue;
+
+    out.push({
+      date: date,
+      client: client,
+      project: project,
+      category: category,
+      type: type,
+      group: group,
+      position: position,
+      qty: toNumber_(r[idxQty], 0),
+      halls: toNumber_(r[idxHalls], 0),
+      days: toNumber_(r[idxDays], 0),
+      coef: toNumber_(r[idxCoef], 1),
+      unitCost: toNumber_(r[idxPrice], 0)
+    });
+  }
+
+  return out;
 }
 
 function listProjects_() {
