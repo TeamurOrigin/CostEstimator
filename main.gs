@@ -1,8 +1,8 @@
 var REF_SHEET_NAME = 'Справочник сметы';
 
 var PROJECTS_STORE_KEY = 'cs_projects_v3';
-var ENTRIES_STORE_PREFIX = 'cs_entries_v3_';        // + projectId
-var ITEMS_STORE_PREFIX = 'cs_items_v3_';            // + entryId
+var ENTRIES_STORE_PREFIX = 'cs_entries_v3_';
+var ITEMS_STORE_PREFIX = 'cs_items_v3_';
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Смета')
@@ -36,15 +36,19 @@ function openEntryItems(entryId) {
   return true;
 }
 
-/** BOOTSTRAP (первое окно) */
 function getBootstrapData() {
   ensureCoreSheets_();
   var ref = readRef_();
   var projects = listProjects_();
-  return { projects: projects, categories: ref.categories, positionsByCategory: ref.positionsByCategory, types: ref.types, pricesByPosition: ref.pricesByPosition };
+  return {
+    projects: projects,
+    categories: ref.categories,
+    positionsByCategory: ref.positionsByCategory,
+    types: ref.types,
+    pricesByPosition: ref.pricesByPosition
+  };
 }
 
-/** ПРАВЫЙ БЛОК: список записей сметы по проекту */
 function getProjectEntries(projectId) {
   ensureCoreSheets_();
   var project = findProjectById_(projectId);
@@ -60,7 +64,6 @@ function getProjectEntries(projectId) {
   return { project: project, entries: entries };
 }
 
-/** ПРОЕКТЫ */
 function createProject(payload) {
   var lock = LockService.getDocumentLock();
   lock.waitLock(10000);
@@ -157,7 +160,6 @@ function duplicateProject(projectId) {
   }
 }
 
-/** ЗАПИСИ (Смета) */
 function createEntry(projectId, payload) {
   var lock = LockService.getDocumentLock();
   lock.waitLock(10000);
@@ -257,7 +259,6 @@ function duplicateEntry(entryId) {
   }
 }
 
-/** BOOTSTRAP (второе окно) */
 function getEntryItemsBootstrap(entryId) {
   ensureCoreSheets_();
   var info = findEntryWithProject_(entryId);
@@ -265,7 +266,15 @@ function getEntryItemsBootstrap(entryId) {
 
   var ref = readRef_();
   var items = normalizeItems_(loadItems_(entryId));
-  return { project: info.project, entry: info.entry, items: items, categories: ref.categories, positionsByCategory: ref.positionsByCategory, types: ref.types, pricesByPosition: ref.pricesByPosition };
+  return {
+    project: info.project,
+    entry: info.entry,
+    items: items,
+    categories: ref.categories,
+    positionsByCategory: ref.positionsByCategory,
+    types: ref.types,
+    pricesByPosition: ref.pricesByPosition
+  };
 }
 
 function saveEntryAll(entryId, meta, items) {
@@ -334,7 +343,6 @@ function saveEntryAll(entryId, meta, items) {
   }
 }
 
-/** HELPERS */
 function ensureCoreSheets_() {
   var ss = SpreadsheetApp.getActive();
   if (!ss.getSheetByName(REF_SHEET_NAME)) {
@@ -355,10 +363,10 @@ function readRef_() {
   var last = sh.getLastRow();
   if (last < 2) return { categories: [], positionsByCategory: {}, types: [], pricesByPosition: {} };
 
-  var cats = sh.getRange(2, 1, last - 1, 1).getValues();  // A
-  var pos = sh.getRange(2, 2, last - 1, 1).getValues();   // B
-  var prices = sh.getRange(2, 3, last - 1, 1).getValues(); // C
-  var typesRange = sh.getRange(2, 4, last - 1, 1).getValues(); // D
+  var cats = sh.getRange(2, 1, last - 1, 1).getValues();
+  var pos = sh.getRange(2, 2, last - 1, 1).getValues();
+  var prices = sh.getRange(2, 3, last - 1, 1).getValues();
+  var typesRange = sh.getRange(2, 4, last - 1, 1).getValues();
 
   var map = {};
   var pricesMap = {};
