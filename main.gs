@@ -518,11 +518,41 @@ function readClientsDbRows_() {
   var lastCol = sh.getLastColumn();
   if (lastRow < 2 || lastCol < 12) return [];
 
-  var values = sh.getRange(2, 1, lastRow - 1, 12).getValues();
+  var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0] || [];
+  var headerMap = {};
+  for (var h = 0; h < headers.length; h++) {
+    var key = String(headers[h] || '').trim().toLowerCase();
+    if (!key) continue;
+    headerMap[key] = h;
+  }
+
+  function colIndexByAliases_(aliases, fallbackIndex) {
+    for (var a = 0; a < aliases.length; a++) {
+      var k = String(aliases[a] || '').trim().toLowerCase();
+      if (Object.prototype.hasOwnProperty.call(headerMap, k)) return headerMap[k];
+    }
+    return fallbackIndex;
+  }
+
+  var idxDate = colIndexByAliases_(['дата'], 0);
+  var idxClient = colIndexByAliases_(['клиент'], 1);
+  var idxProject = colIndexByAliases_(['проект'], 2);
+  var idxType = colIndexByAliases_(['тип'], 3);
+  var idxGroup = colIndexByAliases_(['группа'], 4);
+  var idxCategory = colIndexByAliases_(['категория'], 5);
+  var idxPosition = colIndexByAliases_(['позиция', 'наименование'], 6);
+  var idxQty = colIndexByAliases_(['кол-во', 'колво', 'количество'], 7);
+  var idxHalls = colIndexByAliases_(['залов', 'залы'], 8);
+  var idxDays = colIndexByAliases_(['дней', 'дни'], 9);
+  var idxCoef = colIndexByAliases_(['коэф.', 'коэф', 'коэффициент'], 10);
+  var idxPrice = colIndexByAliases_(['цена', 'стоимость'], 11);
+
+  var values = sh.getRange(2, 1, lastRow - 1, lastCol).getValues();
   var out = [];
   for (var i = 0; i < values.length; i++) {
     var r = values[i] || [];
-    var dateRaw = r[0];
+
+    var dateRaw = r[idxDate];
     var date = '';
     if (Object.prototype.toString.call(dateRaw) === '[object Date]' && !isNaN(dateRaw.getTime())) {
       date = Utilities.formatDate(dateRaw, Session.getScriptTimeZone(), 'dd.MM.yyyy');
@@ -530,14 +560,14 @@ function readClientsDbRows_() {
       date = String(dateRaw || '').trim();
     }
 
-    var client = String(r[1] || '').trim();
-    var project = String(r[2] || '').trim();
-    var category = String(r[3] || '').trim();
-    var type = String(r[4] || '').trim();
-    var group = String(r[5] || '').trim();
-    var position = String(r[6] || '').trim();
+    var client = String(r[idxClient] || '').trim();
+    var project = String(r[idxProject] || '').trim();
+    var type = String(r[idxType] || '').trim();
+    var group = String(r[idxGroup] || '').trim();
+    var category = String(r[idxCategory] || '').trim();
+    var position = String(r[idxPosition] || '').trim();
 
-    if (!date || !client || !project || !category || !type || !position) continue;
+    if (!date || !client || !project || !type || !position) continue;
 
     out.push({
       date: date,
@@ -547,11 +577,11 @@ function readClientsDbRows_() {
       type: type,
       group: group,
       position: position,
-      qty: toNumber_(r[7], 0),
-      halls: toNumber_(r[8], 0),
-      days: toNumber_(r[9], 0),
-      coef: toNumber_(r[10], 1),
-      unitCost: toNumber_(r[11], 0)
+      qty: toNumber_(r[idxQty], 0),
+      halls: toNumber_(r[idxHalls], 0),
+      days: toNumber_(r[idxDays], 0),
+      coef: toNumber_(r[idxCoef], 1),
+      unitCost: toNumber_(r[idxPrice], 0)
     });
   }
 
