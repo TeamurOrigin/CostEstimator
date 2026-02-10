@@ -55,6 +55,7 @@
       border:1px solid var(--border2);border-radius:999px;background:rgba(2,6,23,.40);
       box-shadow:inset 0 1px 0 rgba(255,255,255,.04);white-space:nowrap
     }
+    .topActions{display:flex;align-items:center;gap:10px}
 
     .split{display:grid;grid-template-columns:minmax(420px,520px) 1fr;gap:12px}
 
@@ -137,6 +138,8 @@
     .btn:disabled{cursor:default}
 
     .gridL{display:grid;grid-template-columns:1fr 180px auto;gap:10px;align-items:end;margin-bottom:12px}
+    .gridImport{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:end;margin-bottom:12px}
+    .hidden{display:none!important}
     .gridR{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px}
 
     .tableShell{
@@ -235,6 +238,33 @@
       overflow:auto;
     }
 
+
+    .type-dd-search-wrap{
+      position:sticky;
+      top:0;
+      z-index:2;
+      padding:4px;
+      background:linear-gradient(180deg, rgba(15,23,42,.94), rgba(15,23,42,.78));
+      border-bottom:1px solid rgba(148,163,184,.12);
+      margin:-4px -4px 4px;
+      border-radius:12px 12px 0 0;
+    }
+    .type-dd-search{
+      width:100%;
+      height:30px;
+      padding:6px 8px;
+      border-radius:9px;
+      border:1px solid rgba(148,163,184,.28);
+      background:rgba(2,6,23,.55);
+      color:var(--text);
+      font-size:12px;
+      font-weight:700;
+    }
+    .type-dd-empty{
+      padding:8px;
+      color:var(--muted);
+      font-size:11px;
+    }
     .type-dd-item{
       display:flex;
       align-items:center;
@@ -268,7 +298,10 @@
   <div class="wrap">
     <div class="top">
       <div class="title">Конструктор сметы</div>
-      <div class="status" id="status">Загрузка…</div>
+      <div class="topActions">
+        <button class="btn mini green" id="btnExport" disabled>Экспорт</button>
+        <div class="status" id="status">Загрузка…</div>
+      </div>
     </div>
 
     <div class="split">
@@ -284,8 +317,8 @@
         <div class="b">
           <div class="gridL">
             <div>
-              <label>Наименование проекта</label>
-              <input id="newProjectName" placeholder="Например: Энергетики">
+              <label>Режим проекта</label>
+              <div id="projectModeMount"></div>
             </div>
 
             <div>
@@ -294,6 +327,26 @@
             </div>
 
             <button class="btn acc" id="btnCreateProject">Новая смета</button>
+          </div>
+
+          <div class="gridImport hidden" id="existingProjectSelectors">
+            <div>
+              <label>Клиент</label>
+              <div id="existingClientMount"></div>
+            </div>
+            <div>
+              <label>Проект</label>
+              <div id="existingProjectMount"></div>
+            </div>
+            <div>
+              <label>Дата</label>
+              <div id="existingDateMount"></div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px">
+            <label>Наименование проекта</label>
+            <input id="newProjectName" placeholder="Например: Энергетики">
           </div>
 
           <div class="tableShell">
@@ -374,12 +427,23 @@
   var selectedProject=null;
   var entries=[];
   var PROJECT_TARIFFS=['Фиксированный','Тарифный','Обычный','Процентный'];
+  var PROJECT_MODES=['Новый клиент','Текущий клиент'];
+  var projectModeDD=null;
   var tariffDD=null;
   var typeDD=null;
   var categoryDD=null;
+  var existingClientDD=null;
+  var existingProjectDD=null;
+  var existingDateDD=null;
+  var clientsDbRows=[];
 
   function $(id){return document.getElementById(id)}
   function setStatus(t){$('status').textContent=t}
+  function updateExportButton(){
+    var btn=$('btnExport');
+    if(!btn) return;
+    btn.disabled=!selectedProjectId;
+  }
   function arr(a){return a&&a.length?a:[]}
   function money(n){var x=Number(n||0);return x.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})}
 
@@ -421,7 +485,10 @@
 
   var activeDropdownCloser=null;
 
-  function createDropdown(options, initial, onSelect){
+  function createDropdown(options, initial, onSelect, cfg){
+    cfg = cfg || {};
+    var searchable = !!cfg.searchable;
+    var searchPlaceholder = cfg.searchPlaceholder || 'Поиск…';
     var value = (initial!=null ? String(initial) : (options && options[0] ? String(options[0]) : ''));
     var btn = document.createElement('button');
     btn.type='button';
@@ -435,66 +502,127 @@
     function openPanel(){
       closeActive();
 
-      var rect = btn.getBoundingClientRect();
       var panel = document.createElement('div');
       panel.className='type-dd-panel';
-      panel.style.left = Math.round(rect.left) + 'px';
-      panel.style.top = Math.round(rect.bottom + 6) + 'px';
-      panel.style.width = Math.round(rect.width) + 'px';
 
-      for(var i=0;i<options.length;i++){
-        (function(opt){
-          var item=document.createElement('div');
-          item.className='type-dd-item' + (String(opt)===String(value) ? ' is-active' : '');
-          item.tabIndex=0;
+      var searchInput = null;
+      var itemsBox = panel;
+      var optionsList = Array.isArray(options) ? options.slice() : [];
 
-          var label=document.createElement('span');
-          label.textContent=String(opt);
-
-          var right=document.createElement('span');
-          right.className='type-dd-check';
-          right.textContent=(String(opt)===String(value)) ? '✓' : '';
-
-          item.appendChild(label);
-          item.appendChild(right);
-
-          item.addEventListener('click', function(){
-            setValue(opt);
-            if(onSelect) onSelect(String(opt));
-            closePanel();
-          });
-
-          panel.appendChild(item);
-        })(options[i]);
+      function setPanelPosition(){
+        var rect = btn.getBoundingClientRect();
+        panel.style.left = Math.round(rect.left) + 'px';
+        panel.style.top = Math.round(rect.bottom + 6) + 'px';
+        panel.style.width = Math.round(rect.width) + 'px';
       }
 
+      function scrollSelectedIntoView(){
+        var active = panel.querySelector('.type-dd-item.is-active');
+        if(active){
+          active.scrollIntoView({block:'nearest'});
+        }
+      }
+
+      function renderList(filterText){
+        var text = String(filterText || '').trim().toLowerCase();
+        itemsBox.innerHTML='';
+        var hasItems = false;
+
+        for(var i=0;i<optionsList.length;i++){
+          var opt = String(optionsList[i] || '');
+          if(text && opt.toLowerCase().indexOf(text)===-1) continue;
+          hasItems = true;
+
+          (function(rawOpt){
+            var item=document.createElement('div');
+            item.className='type-dd-item' + (String(rawOpt)===String(value) ? ' is-active' : '');
+            item.tabIndex=0;
+
+            var label=document.createElement('span');
+            label.textContent=String(rawOpt);
+
+            var right=document.createElement('span');
+            right.className='type-dd-check';
+            right.textContent=(String(rawOpt)===String(value)) ? '✓' : '';
+
+            item.appendChild(label);
+            item.appendChild(right);
+
+            item.addEventListener('click', function(){
+              setValue(rawOpt);
+              if(onSelect) onSelect(String(rawOpt));
+              closePanel();
+            });
+
+            itemsBox.appendChild(item);
+          })(opt);
+        }
+
+        if(!hasItems){
+          var empty = document.createElement('div');
+          empty.className='type-dd-empty';
+          empty.textContent='Ничего не найдено';
+          itemsBox.appendChild(empty);
+        }
+      }
+
+      if(searchable){
+        var searchWrap = document.createElement('div');
+        searchWrap.className='type-dd-search-wrap';
+        searchInput = document.createElement('input');
+        searchInput.type='text';
+        searchInput.className='type-dd-search';
+        searchInput.placeholder=searchPlaceholder;
+        searchWrap.appendChild(searchInput);
+        panel.appendChild(searchWrap);
+
+        itemsBox = document.createElement('div');
+        panel.appendChild(itemsBox);
+
+        searchInput.addEventListener('input', function(){
+          renderList(searchInput.value);
+        });
+      }
+
+      renderList('');
       document.body.appendChild(panel);
+      setPanelPosition();
+      scrollSelectedIntoView();
 
       var onDocDown = function(e){
         if(e.target===btn) return;
         if(panel.contains(e.target)) return;
         closePanel();
       };
+
       var onKeyDown = function(e){
-        if(e.key==='Escape') closePanel();
+        if(e.key==='Escape'){
+          closePanel();
+        }
       };
 
-      var wrap = document.querySelector('.wrap');
-      var onScroll = function(){ closePanel(); };
+      var onResizeOrScroll = function(){
+        if(!panel || !panel.parentNode) return;
+        setPanelPosition();
+      };
 
       function closePanel(){
         document.removeEventListener('mousedown', onDocDown, true);
         document.removeEventListener('keydown', onKeyDown, true);
-        window.removeEventListener('scroll', onScroll, true);
-        if(wrap) wrap.removeEventListener('scroll', onScroll, true);
+        window.removeEventListener('resize', onResizeOrScroll, true);
+        window.removeEventListener('scroll', onResizeOrScroll, true);
         if(panel && panel.parentNode) panel.parentNode.removeChild(panel);
         activeDropdownCloser=null;
       }
 
       document.addEventListener('mousedown', onDocDown, true);
       document.addEventListener('keydown', onKeyDown, true);
-      window.addEventListener('scroll', onScroll, true);
-      if(wrap) wrap.addEventListener('scroll', onScroll, true);
+      window.addEventListener('resize', onResizeOrScroll, true);
+      window.addEventListener('scroll', onResizeOrScroll, true);
+
+      if(searchInput){
+        setTimeout(function(){ searchInput.focus(); searchInput.select(); }, 0);
+      }
 
       activeDropdownCloser = closePanel;
     }
@@ -514,6 +642,100 @@
 
     setValue(value);
     return { btn: btn, getValue: getValue, setValue: setValue };
+  }
+
+
+  function getImportRows(){
+    if (!boot || !boot.clientsDbRows) return [];
+    return arr(boot.clientsDbRows);
+  }
+
+  function uniqSorted(list){
+    var seen={};
+    var out=[];
+    for(var i=0;i<list.length;i++){
+      var v=String(list[i]||'').trim();
+      if(!v || seen[v]) continue;
+      seen[v]=true;
+      out.push(v);
+    }
+    out.sort(function(a,b){ return a.localeCompare(b,'ru'); });
+    return out;
+  }
+
+  function setCreateButtonByMode(){
+    var mode = projectModeDD && projectModeDD.getValue ? projectModeDD.getValue() : 'Новый клиент';
+    $('btnCreateProject').textContent = (mode==='Текущий клиент' ? 'Импорт' : 'Новая смета');
+    $('existingProjectSelectors').classList.toggle('hidden', mode!=='Текущий клиент');
+  }
+
+  function initProjectModeDropdown(){
+    var mount=$('projectModeMount');
+    mount.innerHTML='';
+    projectModeDD = createDropdown(PROJECT_MODES, 'Новый клиент', function(){
+      setCreateButtonByMode();
+      refreshExistingClientDropdowns();
+    });
+    mount.appendChild(projectModeDD.btn);
+    setCreateButtonByMode();
+  }
+
+  function refreshExistingClientDropdowns(){
+    var rows=getImportRows();
+    clientsDbRows=rows;
+    var clientMount=$('existingClientMount');
+    var projectMount=$('existingProjectMount');
+    var dateMount=$('existingDateMount');
+    if(!clientMount || !projectMount || !dateMount) return;
+
+    clientMount.innerHTML='';
+    projectMount.innerHTML='';
+    dateMount.innerHTML='';
+
+    var clients=uniqSorted(rows.map(function(r){ return r.client; }));
+    var currentClient=existingClientDD && existingClientDD.getValue ? existingClientDD.getValue() : clients[0];
+    if(clients.indexOf(currentClient)===-1) currentClient=clients[0]||'';
+
+    existingClientDD=createDropdown(clients.length?clients:['—'], currentClient||'—', function(){ refreshExistingProjectDropdown(); }, {searchable:true, searchPlaceholder:'Найти клиента…'});
+    clientMount.appendChild(existingClientDD.btn);
+    refreshExistingProjectDropdown();
+  }
+
+  function refreshExistingProjectDropdown(){
+    var projectMount=$('existingProjectMount');
+    var dateMount=$('existingDateMount');
+    if(!projectMount || !dateMount) return;
+
+    projectMount.innerHTML='';
+    dateMount.innerHTML='';
+
+    var client=existingClientDD && existingClientDD.getValue ? existingClientDD.getValue() : '';
+    var rows=clientsDbRows.filter(function(r){ return String(r.client||'')===String(client||''); });
+    var projects=uniqSorted(rows.map(function(r){ return r.project; }));
+    var currentProject=existingProjectDD && existingProjectDD.getValue ? existingProjectDD.getValue() : projects[0];
+    if(projects.indexOf(currentProject)===-1) currentProject=projects[0]||'';
+
+    existingProjectDD=createDropdown(projects.length?projects:['—'], currentProject||'—', function(){ refreshExistingDateDropdown(); }, {searchable:true, searchPlaceholder:'Найти проект…'});
+    projectMount.appendChild(existingProjectDD.btn);
+    refreshExistingDateDropdown();
+  }
+
+  function refreshExistingDateDropdown(){
+    var dateMount=$('existingDateMount');
+    if(!dateMount) return;
+    dateMount.innerHTML='';
+
+    var client=existingClientDD && existingClientDD.getValue ? existingClientDD.getValue() : '';
+    var project=existingProjectDD && existingProjectDD.getValue ? existingProjectDD.getValue() : '';
+    var rows=clientsDbRows.filter(function(r){
+      return String(r.client||'')===String(client||'') && String(r.project||'')===String(project||'');
+    });
+    var dates=uniqSorted(rows.map(function(r){ return r.date; }));
+    var currentDate=existingDateDD && existingDateDD.getValue ? existingDateDD.getValue() : dates[0];
+    if(dates.indexOf(currentDate)===-1) currentDate=dates[0]||'';
+
+    existingDateDD=createDropdown(dates.length?dates:['—'], currentDate||'—', function(){}, {searchable:true, searchPlaceholder:'Найти дату…'});
+    dateMount.appendChild(existingDateDD.btn);
   }
 
   function initTariffDropdown(){
@@ -643,11 +865,13 @@
       var td=document.createElement('td');td.colSpan=6;td.style.color='rgba(149,166,199,.85)';td.style.padding='12px 10px';
       td.textContent='Сначала выберите проект';
       tr.appendChild(td);body.appendChild(tr);
+      updateExportButton();
       return;
     }
 
     $('entriesTitle').textContent='Смета • ' + (selectedProject.name||'');
     $('eMeta').textContent='Записей: ' + entries.length + (selectedProject.tariff ? ' • ' + selectedProject.tariff : '');
+    updateExportButton();
 
     if(!entries.length){
       var tr0=document.createElement('tr');
@@ -714,12 +938,14 @@
       boot=data;
 
       initEntryDropdowns(arr(boot.types), arr(boot.categories));
+      refreshExistingClientDropdowns();
 
       renderProjects();
 
       if(selectedProjectId){
         selectProject(selectedProjectId, cb);
       } else {
+        selectedProjectId='';
         selectedProject=null;
         entries=[];
         renderEntries();
@@ -731,6 +957,7 @@
 
   function selectProject(id, cb){
     selectedProjectId=String(id||'');
+    updateExportButton();
     var list=arr(boot && boot.projects);
     selectedProject=null;
     for(var i=0;i<list.length;i++){
@@ -752,8 +979,28 @@
   }
 
   function createProject(btn){
+    var mode=(projectModeDD && projectModeDD.getValue ? projectModeDD.getValue() : 'Новый клиент');
     var name=$('newProjectName').value.trim();
     var tariff=(tariffDD && tariffDD.getValue ? tariffDD.getValue().trim() : '');
+
+    if(mode==='Текущий клиент'){
+      var client=(existingClientDD && existingClientDD.getValue ? existingClientDD.getValue().trim() : '');
+      var project=(existingProjectDD && existingProjectDD.getValue ? existingProjectDD.getValue().trim() : '');
+      var date=(existingDateDD && existingDateDD.getValue ? existingDateDD.getValue().trim() : '');
+      if(!client || client==='—'){ setStatus('Укажите клиента'); return; }
+      if(!project || project==='—'){ setStatus('Укажите проект'); return; }
+      if(!date || date==='—'){ setStatus('Укажите дату'); return; }
+      if(!name){ setStatus('Укажите наименование проекта'); return; }
+      if(!tariff){ setStatus('Укажите тариф'); return; }
+
+      callGs(btn,'Импорт проекта…','importExistingProject',[{name:name, tariff:tariff, client:client, project:project, date:date}],function(p){
+        $('newProjectName').value='';
+        if(tariffDD && tariffDD.setValue) tariffDD.setValue('Обычный');
+        refreshAll(null,function(){ selectProject(p.id); });
+      });
+      return;
+    }
+
     if(!name){ setStatus('Укажите наименование проекта'); return; }
     if(!tariff){ setStatus('Укажите тариф'); return; }
 
@@ -764,10 +1011,19 @@
     });
   }
 
+
+  function exportProject(btn){
+    if(!selectedProjectId){ setStatus('Сначала выберите проект'); return; }
+    callGs(btn,'Экспорт в Черновик…','exportProjectToDraft',[selectedProjectId],function(res){
+      setStatus('Экспортировано строк: ' + String(Number(res && res.rows || 0)));
+    });
+  }
+
   function deleteProject(id, btn){
     callGs(btn,'Удаление проекта…','deleteProject',[id],function(){
       if(String(id)===String(selectedProjectId)){ selectedProjectId=''; selectedProject=null; entries=[]; }
-      refreshAll(null);
+      updateExportButton();
+    refreshAll(null);
     });
   }
 
@@ -799,10 +1055,12 @@
 
   function init(){
     initTariffDropdown();
+    initProjectModeDropdown();
 
     $('btnRefresh').addEventListener('click', function(e){ refreshAll(e.currentTarget); });
     $('btnCreateProject').addEventListener('click', function(e){ createProject(e.currentTarget); });
     $('btnCreateEntry').addEventListener('click', function(e){ createEntry(e.currentTarget); });
+    $('btnExport').addEventListener('click', function(e){ exportProject(e.currentTarget); });
 
     $('dlgOk').addEventListener('click', function(){ closeDialog(true); });
     $('dlgCancel').addEventListener('click', function(){ closeDialog(false); });
@@ -810,6 +1068,7 @@
       if(e.key==='Escape' && !$('dlgOverlay').classList.contains('hidden')) closeDialog(false);
     });
 
+    updateExportButton();
     refreshAll(null);
   }
 
