@@ -19,8 +19,6 @@
       --shadow2:0 10px 28px rgba(0,0,0,.35);
       --r:16px;
       --r2:12px;
-
-      /* ✅ dropdown like sample */
       --dd-bg: rgba(15, 23, 42, 0.18);
       --dd-border: rgba(148, 163, 184, 0.22);
     }
@@ -160,7 +158,6 @@
     .actions{display:flex;gap:8px;justify-content:flex-end;align-items:center}
     .actions .btn{width:auto;min-width:72px}
 
-    /* ✅ confirm dialog */
     .dlgOverlay{
       position:fixed;inset:0;z-index:9999;
       background:rgba(0,0,0,.58);
@@ -188,9 +185,6 @@
     .dlgB{padding:12px 14px;color:rgba(231,238,252,.92);line-height:1.35}
     .dlgActions{padding:12px 14px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
 
-    /* =========================
-       ✅ DROPDOWN (like sample)
-       ========================= */
     .type-dd-btn{
       width:100%;
       height:34px;
@@ -425,9 +419,6 @@
     if(value!=null) sel.value=value;
   }
 
-  /* =========================
-     ✅ Custom dropdown (tariff)
-     ========================= */
   var activeDropdownCloser=null;
 
   function createDropdown(options, initial, onSelect){
@@ -550,9 +541,6 @@
     categoryMount.appendChild(categoryDD.btn);
   }
 
-  /* =========================
-     ✅ Confirm dialog
-     ========================= */
   var dlgResolve=null;
   function confirmDialog(opts){
     opts=opts||{};
