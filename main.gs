@@ -86,6 +86,7 @@ function getProjectPreviewData(projectId) {
     qty: 0,
     halls: 0,
     days: 0,
+    maxDays: 0,
     coefSum: 0,
     unitCostSum: 0,
     sum: 0
@@ -124,7 +125,8 @@ function getProjectPreviewData(projectId) {
       totals.itemsCount += 1;
       totals.qty += qty;
       totals.halls += halls;
-      totals.days += days;
+      totals.maxDays = Math.max(totals.maxDays, days);
+      totals.days = totals.maxDays;
       totals.coefSum += coef;
       totals.unitCostSum += unitCost;
       totals.sum += lineTotal;
