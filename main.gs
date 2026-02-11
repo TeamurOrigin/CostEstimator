@@ -5,6 +5,10 @@ var PROJECTS_STORE_KEY = 'cs_projects_v3';
 var ENTRIES_STORE_PREFIX = 'cs_entries_v3_';
 var ITEMS_STORE_PREFIX = 'cs_items_v3_';
 
+var TEMP_PDF_CLEANUP_KEY = 'cs_temp_pdf_cleanup_v1';
+var TEMP_PDF_CLEANUP_TRIGGER = 'cleanupTempPdfFiles_';
+var TEMP_PDF_TTL_MS = 10 * 60 * 1000;
+
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Смета')
     .addItem('Конструктор сметы', 'openEstimateBuilder')
@@ -371,6 +375,8 @@ function exportProjectToPdf(projectId) {
     var file = DriveApp.createFile(pdfBlob).setName(fileName);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
+    scheduleTempPdfCleanup_(file.getId());
+
     return {
       ok: true,
       rows: Number(res.rows || 0),
@@ -380,6 +386,85 @@ function exportProjectToPdf(projectId) {
     };
   } finally {
     ss.deleteSheet(sh);
+  }
+}
+
+function scheduleTempPdfCleanup_(fileId) {
+  if (!fileId) return;
+
+  var props = PropertiesService.getScriptProperties();
+  var raw = props.getProperty(TEMP_PDF_CLEANUP_KEY);
+  var queue = {};
+  if (raw) {
+    try {
+      queue = JSON.parse(raw) || {};
+    } catch (err) {
+      queue = {};
+    }
+  }
+
+  queue[String(fileId)] = Date.now() + TEMP_PDF_TTL_MS;
+  props.setProperty(TEMP_PDF_CLEANUP_KEY, JSON.stringify(queue));
+
+  var triggers = ScriptApp.getProjectTriggers();
+  var hasCleanupTrigger = false;
+  for (var i = 0; i < triggers.length; i++) {
+    if (String(triggers[i].getHandlerFunction()) === TEMP_PDF_CLEANUP_TRIGGER) {
+      hasCleanupTrigger = true;
+      break;
+    }
+  }
+
+  if (!hasCleanupTrigger) {
+    ScriptApp.newTrigger(TEMP_PDF_CLEANUP_TRIGGER)
+      .timeBased()
+      .everyMinutes(5)
+      .create();
+  }
+}
+
+function cleanupTempPdfFiles_() {
+  var props = PropertiesService.getScriptProperties();
+  var raw = props.getProperty(TEMP_PDF_CLEANUP_KEY);
+  if (!raw) return;
+
+  var queue = {};
+  try {
+    queue = JSON.parse(raw) || {};
+  } catch (err) {
+    props.deleteProperty(TEMP_PDF_CLEANUP_KEY);
+    return;
+  }
+
+  var now = Date.now();
+  var nextQueue = {};
+  for (var fileId in queue) {
+    if (!queue.hasOwnProperty(fileId)) continue;
+    var dueAt = Number(queue[fileId] || 0);
+    if (dueAt > now) {
+      nextQueue[fileId] = dueAt;
+      continue;
+    }
+
+    try {
+      DriveApp.getFileById(String(fileId)).setTrashed(true);
+    } catch (err2) {
+      Logger.log('cleanupTempPdfFiles_ failed for ' + fileId + ': ' + err2);
+      nextQueue[fileId] = now + 30 * 60 * 1000;
+    }
+  }
+
+  var keys = Object.keys(nextQueue);
+  if (keys.length) {
+    props.setProperty(TEMP_PDF_CLEANUP_KEY, JSON.stringify(nextQueue));
+  } else {
+    props.deleteProperty(TEMP_PDF_CLEANUP_KEY);
+    var triggers = ScriptApp.getProjectTriggers();
+    for (var i = 0; i < triggers.length; i++) {
+      if (String(triggers[i].getHandlerFunction()) === TEMP_PDF_CLEANUP_TRIGGER) {
+        ScriptApp.deleteTrigger(triggers[i]);
+      }
+    }
   }
 }
 
