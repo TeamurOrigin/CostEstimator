@@ -147,6 +147,27 @@ function getProjectPreviewData(projectId) {
   };
 }
 
+function buildExportGroupName_(entries) {
+  var list = Array.isArray(entries) ? entries : [];
+  var groups = [];
+  for (var i = 0; i < list.length; i++) {
+    var g = String(list[i] && list[i].group ? list[i].group : '').trim();
+    if (!g) continue;
+    groups.push(g);
+  }
+  if (!groups.length) return 'Без группы';
+  groups.sort(function(a, b) { return a.localeCompare(b, 'ru'); });
+  return groups[0];
+}
+
+function buildExportDisplayName_(project, entries) {
+  var tz = Session.getScriptTimeZone();
+  var exportDate = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  var groupName = buildExportGroupName_(entries);
+  var client = String(project && project.client ? project.client : '').trim() || 'Клиент';
+  return exportDate + ' ' + groupName + ' - ' + client;
+}
+
 function exportProjectToClientSheet(projectId, optSpreadsheetId) {
   var lock = LockService.getDocumentLock();
   lock.waitLock(10000);
@@ -167,10 +188,9 @@ function exportProjectToClientSheet(projectId, optSpreadsheetId) {
       return String(a.category || '').localeCompare(String(b.category || ''), 'ru');
     });
 
-    var client = String(project.client || '').trim();
-    var projectName = String(project.name || '').trim();
+    var exportName = buildExportDisplayName_(project, entries);
     var ss = optSpreadsheetId ? SpreadsheetApp.openById(String(optSpreadsheetId)) : SpreadsheetApp.getActive();
-    var sheetName = makeUniqueSheetName_(buildClientProjectSheetName_(client, projectName), ss);
+    var sheetName = makeUniqueSheetName_(exportName, ss);
 
     var sh = ss.insertSheet(sheetName);
 
@@ -276,7 +296,7 @@ function exportProjectToClientSheet(projectId, optSpreadsheetId) {
       }
     }
 
-    if (!rowsCount) return { ok: true, rows: 0, sheetName: sheetName };
+    if (!rowsCount) return { ok: true, rows: 0, sheetName: sheetName, exportName: exportName };
 
     sh.getRange(START_ROW, START_COL, rows.length, COLS).setValues(rows);
 
@@ -355,18 +375,20 @@ function exportProjectToClientSheet(projectId, optSpreadsheetId) {
 
     sh.setFrozenRows(6);
 
-    return { ok: true, rows: rowsCount, sheetName: sheetName };
+    return { ok: true, rows: rowsCount, sheetName: sheetName, exportName: exportName };
   } finally {
     lock.releaseLock();
   }
 }
 
 function exportProjectToSpreadsheet(projectId) {
-  var spreadsheetName = 'Смета_' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd_HHmmss');
-  var target = SpreadsheetApp.create(spreadsheetName);
+  var target = SpreadsheetApp.create('tmp_sheet_export_' + Utilities.getUuid());
   var targetId = target.getId();
 
   var res = exportProjectToClientSheet(projectId, targetId);
+  var spreadsheetName = String(res && res.exportName ? res.exportName : 'Смета');
+  DriveApp.getFileById(targetId).setName(spreadsheetName);
+
   if (!res || !res.rows) {
     return { ok: true, rows: 0, spreadsheetId: targetId, spreadsheetName: spreadsheetName, spreadsheetUrl: target.getUrl() };
   }
@@ -399,7 +421,7 @@ function exportProjectToPdf(projectId) {
     var sh = tempSpreadsheet.getSheetByName(String(res.sheetName || ''));
     if (!sh) throw new Error('Лист экспорта не найден.');
 
-    var fileName = String(res.sheetName || 'Смета') + '.pdf';
+    var fileName = String(res.exportName || res.sheetName || 'Смета') + '.pdf';
     var pdfBlob = exportSheetPdfBlob_(tempSpreadsheetId, sh.getSheetId(), fileName);
     var file = DriveApp.createFile(pdfBlob).setName(fileName);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
