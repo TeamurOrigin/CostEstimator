@@ -193,6 +193,7 @@ function exportProjectToClientSheet(projectId) {
     sh.setRowHeights(2, 3, 42);
     var logoRange = sh.getRange('B2:I4');
     logoRange.clearContent();
+    logoRange.merge();
     logoRange.setHorizontalAlignment('left').setVerticalAlignment('middle');
     setLogoImageInCell_(sh, logoUrl, 2, 2);
 
