@@ -66,6 +66,70 @@ function getProjectEntries(projectId) {
   return { project: project, entries: entries };
 }
 
+function getProjectPreviewData(projectId) {
+  ensureCoreSheets_();
+  var project = findProjectById_(projectId);
+  if (!project) throw new Error('Проект не найден.');
+
+  var entries = loadEntries_(projectId);
+  entries.sort(function(a, b) {
+    var at = String(a.type || '').localeCompare(String(b.type || ''), 'ru');
+    if (at) return at;
+    var ag = String(a.group || '').localeCompare(String(b.group || ''), 'ru');
+    if (ag) return ag;
+    return String(a.category || '').localeCompare(String(b.category || ''), 'ru');
+  });
+
+  var rows = [];
+  var totals = {
+    itemsCount: 0,
+    qty: 0,
+    sum: 0
+  };
+
+  for (var e = 0; e < entries.length; e++) {
+    var entry = entries[e] || {};
+    var items = normalizeItems_(loadItems_(String(entry.id)));
+    items.sort(function(x, y) {
+      return String(x.position || '').localeCompare(String(y.position || ''), 'ru');
+    });
+
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i] || {};
+      var qty = toNumber_(it.qty, 0);
+      var halls = toNumber_(it.halls, 0);
+      var days = toNumber_(it.days, 0);
+      var eventDays = toNumber_(it.eventDays, 0);
+      var coef = toNumber_(it.coef, 1);
+      var unitCost = toNumber_(it.unitCost, 0);
+      var lineTotal = qty * halls * days * eventDays * coef * unitCost;
+
+      rows.push({
+        type: String(entry.type || ''),
+        group: String(entry.group || ''),
+        category: String(entry.category || ''),
+        position: String(it.position || ''),
+        qty: qty,
+        halls: halls,
+        days: days,
+        coef: coef,
+        unitCost: unitCost,
+        lineTotal: lineTotal
+      });
+
+      totals.itemsCount += 1;
+      totals.qty += qty;
+      totals.sum += lineTotal;
+    }
+  }
+
+  return {
+    project: project,
+    rows: rows,
+    totals: totals
+  };
+}
+
 function exportProjectToDraft(projectId) {
   var lock = LockService.getDocumentLock();
   lock.waitLock(10000);
