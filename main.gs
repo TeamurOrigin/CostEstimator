@@ -381,13 +381,34 @@ function exportProjectToClientSheet(projectId, optSpreadsheetId) {
   }
 }
 
-function exportProjectToSpreadsheet(projectId) {
+function placeFileInFolder_(file, folderId) {
+  var id = String(folderId || '').trim();
+  if (!id) return file;
+
+  var folder;
+  try {
+    folder = DriveApp.getFolderById(id);
+  } catch (err) {
+    throw new Error('Папка для экспорта не найдена или нет доступа.');
+  }
+
+  folder.addFile(file);
+  try {
+    DriveApp.getRootFolder().removeFile(file);
+  } catch (err2) {
+    Logger.log('placeFileInFolder_ root remove skipped: ' + err2);
+  }
+  return file;
+}
+
+function exportProjectToSpreadsheet(projectId, targetFolderId) {
   var target = SpreadsheetApp.create('tmp_sheet_export_' + Utilities.getUuid());
   var targetId = target.getId();
 
   var res = exportProjectToClientSheet(projectId, targetId);
   var spreadsheetName = String(res && res.exportName ? res.exportName : 'Смета');
-  DriveApp.getFileById(targetId).setName(spreadsheetName);
+  var targetFile = DriveApp.getFileById(targetId).setName(spreadsheetName);
+  placeFileInFolder_(targetFile, targetFolderId);
 
   if (!res || !res.rows) {
     return { ok: true, rows: 0, spreadsheetId: targetId, spreadsheetName: spreadsheetName, spreadsheetUrl: target.getUrl() };
@@ -410,7 +431,7 @@ function exportProjectToSpreadsheet(projectId) {
   };
 }
 
-function exportProjectToPdf(projectId) {
+function exportProjectToPdf(projectId, targetFolderId) {
   var tempSpreadsheet = SpreadsheetApp.create('tmp_pdf_export_' + Utilities.getUuid());
   var tempSpreadsheetId = tempSpreadsheet.getId();
 
@@ -425,6 +446,7 @@ function exportProjectToPdf(projectId) {
     var pdfBlob = exportSheetPdfBlob_(tempSpreadsheetId, sh.getSheetId(), fileName);
     var file = DriveApp.createFile(pdfBlob).setName(fileName);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    placeFileInFolder_(file, targetFolderId);
 
     scheduleTempPdfCleanup_(file.getId());
 

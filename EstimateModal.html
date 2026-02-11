@@ -57,6 +57,17 @@
     }
     .topLeft{display:flex;align-items:center;gap:12px;min-width:0}
     .topActions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .exportFolderInput{
+      width:290px;
+      max-width:38vw;
+      height:30px;
+      padding:0 10px;
+      border-radius:11px;
+      border:1px solid var(--border2);
+      background:rgba(2,6,23,.45);
+      color:var(--text);
+      font-size:11px;
+    }
 
     .split{display:grid;grid-template-columns:minmax(420px,520px) 1fr;gap:12px}
 
@@ -379,6 +390,7 @@
           <button class="btn mini" id="btnPreview" disabled>Предпросмотр</button>
           <button class="btn mini acc" id="btnExportSheet" disabled>Экспорт в таблицу</button>
           <button class="btn mini green" id="btnExportPdf" disabled>Экспорт в PDF</button>
+          <input class="exportFolderInput" id="exportFolderId" placeholder="ID папки Google Drive для экспорта (необязательно)">
         </div>
       </div>
       <div class="status" id="status">Загрузка…</div>
@@ -563,6 +575,10 @@
 
   function $(id){return document.getElementById(id)}
   function setStatus(t){$('status').textContent=t}
+  function getExportFolderId(){
+    var el=$('exportFolderId');
+    return String(el && el.value ? el.value : '').trim();
+  }
   function updateExportButtons(){
     var disabled = !selectedProjectId;
     var btnPreview=$('btnPreview');
@@ -1404,7 +1420,7 @@ function numberFmt(n){
 
   function exportProjectToSheet(btn){
     if(!selectedProjectId){ setStatus('Сначала выберите проект'); return; }
-    callGs(btn,'Создание таблицы…','exportProjectToSpreadsheet',[selectedProjectId],function(res){
+    callGs(btn,'Создание таблицы…','exportProjectToSpreadsheet',[selectedProjectId, getExportFolderId()],function(res){
       var title = String(res && res.spreadsheetName ? res.spreadsheetName : '');
       var url = String(res && res.spreadsheetUrl ? res.spreadsheetUrl : '');
       setStatus('Таблица создана: ' + title + ' • строк: ' + String(Number(res && res.rows || 0)));
@@ -1415,7 +1431,7 @@ function numberFmt(n){
 
   function exportProjectToPdf(btn){
     if(!selectedProjectId){ setStatus('Сначала выберите проект'); return; }
-    callGs(btn,'Формирование PDF…','exportProjectToPdf',[selectedProjectId],function(res){
+    callGs(btn,'Формирование PDF…','exportProjectToPdf',[selectedProjectId, getExportFolderId()],function(res){
       var url = String(res && res.downloadUrl ? res.downloadUrl : '');
       var title = String(res && res.fileName ? res.fileName : 'PDF');
       if(!url){ setStatus('Не удалось получить ссылку на PDF'); return; }
