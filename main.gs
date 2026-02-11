@@ -195,7 +195,7 @@ function exportProjectToClientSheet(projectId) {
     logoRange.clearContent();
     logoRange.merge();
     logoRange.setHorizontalAlignment('left').setVerticalAlignment('middle');
-    insertLogoImage_(sh, logoUrl, 2, 2, 8, 3);
+    insertLogoImage_(sh, logoUrl, 2, 2);
 
 
     var START_ROW = 5; // шапка под лого
@@ -736,7 +736,7 @@ function saveEntryAll(entryId, meta, items) {
   }
 }
 
-function insertLogoImage_(sheet, logoUrl, startCol, startRow, colsCount, rowsCount) {
+function insertLogoImage_(sheet, logoUrl, startCol, startRow) {
   try {
     var response = UrlFetchApp.fetch(String(logoUrl || ''), { muteHttpExceptions: true });
     var code = Number(response && response.getResponseCode ? response.getResponseCode() : 0);
@@ -745,22 +745,7 @@ function insertLogoImage_(sheet, logoUrl, startCol, startRow, colsCount, rowsCou
     var blob = response.getBlob();
     if (!blob) return null;
 
-    var img = sheet.insertImage(blob, startCol, startRow);
-    if (!img) return null;
-
-    var targetWidth = 0;
-    for (var c = 0; c < colsCount; c++) {
-      targetWidth += sheet.getColumnWidth(startCol + c);
-    }
-
-    var targetHeight = 0;
-    for (var r = 0; r < rowsCount; r++) {
-      targetHeight += sheet.getRowHeight(startRow + r);
-    }
-
-    if (img.setWidth && targetWidth > 0) img.setWidth(targetWidth);
-    if (img.setHeight && targetHeight > 0) img.setHeight(targetHeight);
-    return img;
+    return sheet.insertImage(blob, startCol, startRow);
   } catch (err) {
     Logger.log('insertLogoImage_ failed: ' + err);
     return null;
