@@ -188,14 +188,13 @@ function exportProjectToClientSheet(projectId) {
     sh.setColumnWidth(9, 560);     // I
     sh.setColumnWidth(10, 10);     // J
 
-    // Лого (B2:I4) — вставка изображением, без формулы
+    // Лого внутри ячейки B2 (in-cell image, без формулы)
     var logoUrl = 'https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/i/iV0aCiBRuy9JCQ';
     sh.setRowHeights(2, 3, 42);
     var logoRange = sh.getRange('B2:I4');
     logoRange.clearContent();
-    logoRange.merge();
     logoRange.setHorizontalAlignment('left').setVerticalAlignment('middle');
-    insertLogoImage_(sh, logoUrl, 2, 2);
+    setLogoImageInCell_(sh, logoUrl, 2, 2);
 
 
     var START_ROW = 5; // шапка под лого
@@ -736,18 +735,20 @@ function saveEntryAll(entryId, meta, items) {
   }
 }
 
-function insertLogoImage_(sheet, logoUrl, startCol, startRow) {
+function setLogoImageInCell_(sheet, logoUrl, startCol, startRow) {
   try {
     var response = UrlFetchApp.fetch(String(logoUrl || ''), { muteHttpExceptions: true });
     var code = Number(response && response.getResponseCode ? response.getResponseCode() : 0);
     if (code < 200 || code >= 300) return null;
 
-    var blob = response.getBlob();
-    if (!blob) return null;
+    var cellImage = SpreadsheetApp.newCellImage()
+      .setSourceUrl(String(logoUrl || ''))
+      .build();
 
-    return sheet.insertImage(blob, startCol, startRow);
+    sheet.getRange(startRow, startCol).setValue(cellImage);
+    return cellImage;
   } catch (err) {
-    Logger.log('insertLogoImage_ failed: ' + err);
+    Logger.log('setLogoImageInCell_ failed: ' + err);
     return null;
   }
 }
