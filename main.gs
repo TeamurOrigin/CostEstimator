@@ -86,6 +86,7 @@ function getProjectPreviewData(projectId) {
     qty: 0,
     halls: 0,
     days: 0,
+    maxDays: 0,
     coefSum: 0,
     unitCostSum: 0,
     sum: 0
@@ -124,7 +125,8 @@ function getProjectPreviewData(projectId) {
       totals.itemsCount += 1;
       totals.qty += qty;
       totals.halls += halls;
-      totals.days += days;
+      totals.maxDays = Math.max(totals.maxDays, days);
+      totals.days = totals.maxDays;
       totals.coefSum += coef;
       totals.unitCostSum += unitCost;
       totals.sum += lineTotal;
@@ -139,55 +141,6 @@ function getProjectPreviewData(projectId) {
     rows: rows,
     totals: totals
   };
-}
-
-function exportProjectToDraft(projectId) {
-  var lock = LockService.getDocumentLock();
-  lock.waitLock(10000);
-  try {
-    ensureCoreSheets_();
-    var project = findProjectById_(projectId);
-    if (!project) throw new Error('Проект не найден.');
-
-    var entries = loadEntries_(projectId);
-    if (!entries.length) return { ok: true, rows: 0 };
-
-    var rows = [];
-    var exportDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM.yyyy');
-    var client = String(project.client || '').trim();
-    var projectName = String(project.name || '').trim();
-
-    for (var e = 0; e < entries.length; e++) {
-      var entry = entries[e] || {};
-      var items = normalizeItems_(loadItems_(String(entry.id)));
-      for (var i = 0; i < items.length; i++) {
-        var it = items[i] || {};
-        rows.push([
-          exportDate,
-          client,
-          projectName,
-          String(entry.type || ''),
-          String(entry.group || ''),
-          String(entry.category || ''),
-          String(it.position || ''),
-          toNumber_(it.qty, 0),
-          toNumber_(it.halls, 0),
-          toNumber_(it.days, 0),
-          toNumber_(it.coef, 1),
-          toNumber_(it.unitCost, 0)
-        ]);
-      }
-    }
-
-    if (!rows.length) return { ok: true, rows: 0 };
-
-    var sh = getOrCreateDraftSheet_();
-    var startRow = sh.getLastRow() + 1;
-    sh.getRange(startRow, 1, rows.length, 12).setValues(rows);
-    return { ok: true, rows: rows.length };
-  } finally {
-    lock.releaseLock();
-  }
 }
 
 function exportProjectToClientSheet(projectId) {
@@ -235,15 +188,14 @@ function exportProjectToClientSheet(projectId) {
     sh.setColumnWidth(9, 560);     // I
     sh.setColumnWidth(10, 10);     // J
 
-    // Лого (B2:I4)
+    // Лого внутри ячейки B2 (in-cell image, без формулы)
     var logoUrl = 'https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/i/iV0aCiBRuy9JCQ';
     sh.setRowHeights(2, 3, 42);
     var logoRange = sh.getRange('B2:I4');
     logoRange.clearContent();
     logoRange.merge();
     logoRange.setHorizontalAlignment('left').setVerticalAlignment('middle');
-    var formula = '=IMAGE("' + logoUrl + '")';
-    sh.getRange(2, 2).setFormula(formula);
+    setLogoImageInCell_(sh, logoUrl, 2, 2);
 
 
     var START_ROW = 5; // шапка под лого
@@ -403,6 +355,66 @@ function exportProjectToClientSheet(projectId) {
   } finally {
     lock.releaseLock();
   }
+}
+
+function exportProjectToPdf(projectId) {
+  var res = exportProjectToClientSheet(projectId);
+  if (!res || !res.rows) return { ok: true, rows: 0, fileName: '', downloadUrl: '' };
+
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName(String(res.sheetName || ''));
+  if (!sh) throw new Error('Лист экспорта не найден.');
+
+  try {
+    var fileName = String(res.sheetName || 'Смета') + '.pdf';
+    var pdfBlob = exportSheetPdfBlob_(ss.getId(), sh.getSheetId(), fileName);
+    var file = DriveApp.createFile(pdfBlob).setName(fileName);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+    return {
+      ok: true,
+      rows: Number(res.rows || 0),
+      fileName: fileName,
+      fileId: file.getId(),
+      downloadUrl: 'https://drive.google.com/uc?export=download&id=' + file.getId()
+    };
+  } finally {
+    ss.deleteSheet(sh);
+  }
+}
+
+function exportSheetPdfBlob_(spreadsheetId, sheetId, fileName) {
+  var base = 'https://docs.google.com/spreadsheets/d/' + encodeURIComponent(String(spreadsheetId || '')) + '/export';
+  var query = [
+    'format=pdf',
+    'gid=' + encodeURIComponent(String(sheetId || '')),
+    'size=A4',
+    'portrait=true',
+    'fitw=true',
+    'sheetnames=false',
+    'printtitle=false',
+    'pagenumbers=false',
+    'gridlines=false',
+    'fzr=false',
+    'top_margin=0.50',
+    'right_margin=0.25',
+    'bottom_margin=0.50',
+    'left_margin=0.25'
+  ].join('&');
+
+  var response = UrlFetchApp.fetch(base + '?' + query, {
+    headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+    muteHttpExceptions: true
+  });
+
+  var code = Number(response && response.getResponseCode ? response.getResponseCode() : 0);
+  if (code < 200 || code >= 300) {
+    throw new Error('Не удалось сформировать PDF (HTTP ' + code + ').');
+  }
+
+  var blob = response.getBlob();
+  if (!blob) throw new Error('Пустой PDF ответ.');
+  return blob.setName(String(fileName || 'Смета.pdf'));
 }
 
 function createProject(payload) {
@@ -784,15 +796,22 @@ function saveEntryAll(entryId, meta, items) {
   }
 }
 
-function getOrCreateDraftSheet_() {
-  var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName('Черновик');
-  if (!sh) sh = ss.insertSheet('Черновик');
+function setLogoImageInCell_(sheet, logoUrl, startCol, startRow) {
+  try {
+    var response = UrlFetchApp.fetch(String(logoUrl || ''), { muteHttpExceptions: true });
+    var code = Number(response && response.getResponseCode ? response.getResponseCode() : 0);
+    if (code < 200 || code >= 300) return null;
 
-  var headers = ['Дата', 'Клиент', 'Проект', 'Тип', 'Группа', 'Категория', 'Позиция', 'Кол-во', 'Залов', 'Дней', 'Коэф.', 'Цена'];
-  sh.getRange(1, 1, 1, headers.length).setValues([headers]);
-  sh.setFrozenRows(1);
-  return sh;
+    var cellImage = SpreadsheetApp.newCellImage()
+      .setSourceUrl(String(logoUrl || ''))
+      .build();
+
+    sheet.getRange(startRow, startCol).setValue(cellImage);
+    return cellImage;
+  } catch (err) {
+    Logger.log('setLogoImageInCell_ failed: ' + err);
+    return null;
+  }
 }
 
 function sanitizeSheetPart_(value) {

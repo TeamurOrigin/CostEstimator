@@ -377,8 +377,8 @@
         <div class="title">Конструктор сметы</div>
         <div class="topActions">
           <button class="btn mini" id="btnPreview" disabled>Предпросмотр</button>
-          <button class="btn mini green" id="btnExport" disabled>Экспорт</button>
           <button class="btn mini acc" id="btnExportSheet" disabled>Экспорт на лист</button>
+          <button class="btn mini green" id="btnExportPdf" disabled>Экспорт в PDF</button>
         </div>
       </div>
       <div class="status" id="status">Загрузка…</div>
@@ -566,11 +566,11 @@
   function updateExportButtons(){
     var disabled = !selectedProjectId;
     var btnPreview=$('btnPreview');
-    var btnDraft=$('btnExport');
     var btnSheet=$('btnExportSheet');
+    var btnPdf=$('btnExportPdf');
     if(btnPreview) btnPreview.disabled=disabled;
-    if(btnDraft) btnDraft.disabled=disabled;
     if(btnSheet) btnSheet.disabled=disabled;
+    if(btnPdf) btnPdf.disabled=disabled;
   }
   function arr(a){return a&&a.length?a:[]}
   function money(n){var x=Number(n||0);return x.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})}
@@ -601,12 +601,14 @@ function numberFmt(n){
     var rows = arr(res && res.rows);
     $('previewMeta').textContent = (project.client || '—') + ' • ' + (project.name || '—') + (project.tariff ? (' • ' + project.tariff) : '');
 
-    function makeAgg_(){ return { qty:0,halls:0,days:0,coef:0,unitCost:0,sum:0,items:0 }; }
+    function makeAgg_(){ return { qty:0,halls:0,days:0,coef:0,coefSum:0,coefCount:0,unitCost:0,sum:0,items:0 }; }
     function addAgg_(a,b){
       a.qty += Number(b.qty||0);
       a.halls += Number(b.halls||0);
-      a.days += Number(b.days||0);
-      a.coef += Number(b.coef||0);
+      a.days = Math.max(Number(a.days||0), Number(b.days||0));
+      a.coefSum += Number(b.coefSum!=null ? b.coefSum : (b.coef||0));
+      a.coefCount += Number(b.coefCount!=null ? b.coefCount : (b.items||0));
+      a.coef = a.coefCount ? (a.coefSum / a.coefCount) : 0;
       a.unitCost += Number(b.unitCost||0);
       a.sum += Number(b.sum||0);
       a.items += Number(b.items||0);
@@ -668,6 +670,8 @@ function numberFmt(n){
           halls:Number(r.halls||0),
           days:Number(r.days||0),
           coef:Number(r.coef||0),
+          coefSum:Number(r.coef||0),
+          coefCount:1,
           unitCost:Number(r.unitCost||0),
           sum:Number(r.lineTotal||0),
           items:1
@@ -780,8 +784,8 @@ function numberFmt(n){
       addTotalRow('Итого позиций', numberFmt(grand.items||0));
       addTotalRow('Сумма Кол-во', numberFmt(grand.qty||0));
       addTotalRow('Сумма Залов', numberFmt(grand.halls||0));
-      addTotalRow('Сумма Дней', numberFmt(grand.days||0));
-      addTotalRow('Сумма Коэф.', numberFmt(grand.coef||0));
+      addTotalRow('Макс. Дней', numberFmt(grand.days||0));
+      addTotalRow('Средний Коэф.', numberFmt(grand.coef||0));
       addTotalRow('Сумма Цены', money0(grand.unitCost||0));
       addTotalRow('Итоговая сумма', money0(grand.sum||0));
     }
@@ -1398,18 +1402,30 @@ function numberFmt(n){
   }
 
 
-  function exportProject(btn){
-    if(!selectedProjectId){ setStatus('Сначала выберите проект'); return; }
-    callGs(btn,'Экспорт в Черновик…','exportProjectToDraft',[selectedProjectId],function(res){
-      setStatus('Экспортировано строк: ' + String(Number(res && res.rows || 0)));
-    });
-  }
-
   function exportProjectToSheet(btn){
     if(!selectedProjectId){ setStatus('Сначала выберите проект'); return; }
     callGs(btn,'Экспорт на отдельный лист…','exportProjectToClientSheet',[selectedProjectId],function(res){
       var title = String(res && res.sheetName ? res.sheetName : '');
       setStatus('Экспорт на лист: ' + title + ' • строк: ' + String(Number(res && res.rows || 0)));
+    });
+  }
+
+
+  function exportProjectToPdf(btn){
+    if(!selectedProjectId){ setStatus('Сначала выберите проект'); return; }
+    callGs(btn,'Формирование PDF…','exportProjectToPdf',[selectedProjectId],function(res){
+      var url = String(res && res.downloadUrl ? res.downloadUrl : '');
+      var title = String(res && res.fileName ? res.fileName : 'PDF');
+      if(!url){ setStatus('Не удалось получить ссылку на PDF'); return; }
+      setStatus('PDF готов: ' + title);
+      var link=document.createElement('a');
+      link.href=url;
+      link.target='_blank';
+      link.rel='noopener';
+      link.download=title;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     });
   }
 
@@ -1466,8 +1482,8 @@ function numberFmt(n){
     $('btnCreateProject').addEventListener('click', function(e){ createProject(e.currentTarget); });
     $('btnCreateEntry').addEventListener('click', function(e){ createEntry(e.currentTarget); });
     $('btnPreview').addEventListener('click', function(e){ openProjectPreview(e.currentTarget); });
-    $('btnExport').addEventListener('click', function(e){ exportProject(e.currentTarget); });
     $('btnExportSheet').addEventListener('click', function(e){ exportProjectToSheet(e.currentTarget); });
+    $('btnExportPdf').addEventListener('click', function(e){ exportProjectToPdf(e.currentTarget); });
 
     $('dlgOk').addEventListener('click', function(){ closeDialog(true); });
     $('dlgCancel').addEventListener('click', function(){ closeDialog(false); });
