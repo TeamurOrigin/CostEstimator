@@ -126,7 +126,7 @@ function exportProjectToClientSheet(projectId) {
     var entries = loadEntries_(projectId);
     if (!entries.length) return { ok: true, rows: 0, sheetName: '' };
 
-    // Сортировка как в образце: Type -> Group -> Category
+    // Сортировка как в образце: Type -> Group -> Category -> (позиции)
     entries.sort(function(a, b) {
       var at = String(a.type || '').localeCompare(String(b.type || ''), 'ru');
       if (at) return at;
@@ -142,24 +142,44 @@ function exportProjectToClientSheet(projectId) {
     var ss = SpreadsheetApp.getActive();
     var sh = ss.insertSheet(sheetName);
 
+    // Оставляем только A:J (до столбца J включительно). Удаляем K:...
+    var keepCols = 10; // A..J
+    var maxCols = sh.getMaxColumns();
+    if (maxCols > keepCols) {
+      sh.deleteColumns(keepCols + 1, maxCols - keepCols);
+    }
+
     // В образце сетка скрыта (линии только от border)
     sh.setHiddenGridlines(true);
 
-    // Колонки как в шаблоне (B:I)
-    sh.setColumnWidths(2, 1, 320); // B Наименование
-    sh.setColumnWidths(3, 4, 56);  // C-F Кол-во/Залов/Дней/Коэф.
-    sh.setColumnWidths(7, 2, 120); // G-H Стоимость/Итого
-    sh.setColumnWidths(9, 1, 560); // I Комментарии
+    // Ширина столбцов (как в образце)
+    sh.setColumnWidth(1, 10);      // A
+    sh.setColumnWidth(2, 320);     // B
+    sh.setColumnWidths(3, 4, 70);  // C-F
+    sh.setColumnWidths(7, 2, 120); // G-H
+    sh.setColumnWidth(9, 560);     // I
+    sh.setColumnWidth(10, 10);     // J
 
-    var START_ROW = 4; // шапка в 4-й строке
+    // Лого (B2:I4)
+    var logoUrl = 'https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/i/iV0aCiBRuy9JCQ';
+    sh.setRowHeights(2, 3, 42);
+    var logoRange = sh.getRange('B2:I4');
+    logoRange.clearContent();
+    logoRange.merge();
+    logoRange.setHorizontalAlignment('left').setVerticalAlignment('middle');
+    var formula = '=IMAGE("' + logoUrl + '")';
+    sh.getRange(2, 2).setFormula(formula);
+
+
+    var START_ROW = 5; // шапка под лого
     var START_COL = 2; // B
     var COLS = 8;       // B..I
 
     var rows = [];
     var kinds = []; // hdr | type | group | category | item
 
-    // Шапка таблицы (перенос в "Итоговая стоимость")
-    rows.push(['Наименование позиции', 'Кол-во', 'Залов', 'Дней', 'Коэф.', 'Стоимость за ед.', 'Итоговая\nстоимость', 'Комментарии']);
+    // Шапка таблицы (с переводами строк для корректного отображения)
+    rows.push(['Наименование позиции', 'Кол-\nво', 'Залов', 'Дней', 'Коэф.', 'Стоимость за\nед.', 'Итоговая\nстоимость', 'Комментарии']);
     kinds.push('hdr');
 
     var currentType = '';
@@ -227,12 +247,10 @@ function exportProjectToClientSheet(projectId) {
 
     if (!rowsCount) return { ok: true, rows: 0, sheetName: sheetName };
 
-    // Запись значений одним пакетом
     sh.getRange(START_ROW, START_COL, rows.length, COLS).setValues(rows);
 
     var tableRange = sh.getRange(START_ROW, START_COL, rows.length, COLS);
 
-    // База стиля (Nunito + белый фон + тонкие границы)
     tableRange
       .setFontFamily('Nunito')
       .setFontSize(10)
@@ -246,11 +264,9 @@ function exportProjectToClientSheet(projectId) {
       .setFontWeight('bold')
       .setFontSize(11)
       .setHorizontalAlignment('center')
-      .setVerticalAlignment('middle')
       .setWrap(true);
-    sh.setRowHeight(START_ROW, 34);
+    sh.setRowHeight(START_ROW, 40);
 
-    // Форматирование “тела” (по колонкам)
     var bodyRows = rows.length - 1;
     if (bodyRows > 0) {
       sh.getRange(START_ROW + 1, START_COL, bodyRows, COLS).setWrap(false);
@@ -260,7 +276,6 @@ function exportProjectToClientSheet(projectId) {
       sh.getRange(START_ROW + 1, 7, bodyRows, 2).setHorizontalAlignment('right');                 // G-H
       sh.getRange(START_ROW + 1, 9, bodyRows, 1).setHorizontalAlignment('left').setWrap(true);    // I
 
-      // Форматы чисел
       sh.getRange(START_ROW + 1, 3, bodyRows, 3).setNumberFormat('0');        // C-E
       sh.getRange(START_ROW + 1, 6, bodyRows, 1).setNumberFormat('0.##');     // F
       sh.getRange(START_ROW + 1, 7, bodyRows, 2).setNumberFormat('#,##0"₽"'); // G-H
@@ -278,7 +293,6 @@ function exportProjectToClientSheet(projectId) {
           .setFontWeight('bold')
           .setFontSize(12)
           .setHorizontalAlignment('center')
-          .setVerticalAlignment('middle')
           .setBackground('#2f2f2f')
           .setFontColor('#ffffff');
         sh.setRowHeight(sheetRow, 24);
@@ -289,7 +303,6 @@ function exportProjectToClientSheet(projectId) {
           .setFontWeight('bold')
           .setFontSize(12)
           .setHorizontalAlignment('center')
-          .setVerticalAlignment('middle')
           .setBackground('#ffffff')
           .setFontColor('#111827');
         sh.setRowHeight(sheetRow, 22);
@@ -301,7 +314,6 @@ function exportProjectToClientSheet(projectId) {
           .setFontStyle('italic')
           .setFontSize(11)
           .setHorizontalAlignment('center')
-          .setVerticalAlignment('middle')
           .setBackground('#ffffff')
           .setFontColor('#9ca3af');
         sh.setRowHeight(sheetRow, 20);
@@ -310,15 +322,13 @@ function exportProjectToClientSheet(projectId) {
       }
     }
 
-    // Закрепляем шапку + первую “чёрную плашку”
-    sh.setFrozenRows(5);
+    sh.setFrozenRows(6);
 
     return { ok: true, rows: rowsCount, sheetName: sheetName };
   } finally {
     lock.releaseLock();
   }
 }
-
 
 function createProject(payload) {
   var lock = LockService.getDocumentLock();
