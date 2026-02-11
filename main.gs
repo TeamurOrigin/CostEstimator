@@ -86,6 +86,7 @@ function getProjectPreviewData(projectId) {
     qty: 0,
     halls: 0,
     days: 0,
+    maxDays: 0,
     coefSum: 0,
     unitCostSum: 0,
     sum: 0
@@ -124,7 +125,8 @@ function getProjectPreviewData(projectId) {
       totals.itemsCount += 1;
       totals.qty += qty;
       totals.halls += halls;
-      totals.days += days;
+      totals.maxDays = Math.max(totals.maxDays, days);
+      totals.days = totals.maxDays;
       totals.coefSum += coef;
       totals.unitCostSum += unitCost;
       totals.sum += lineTotal;
@@ -139,55 +141,6 @@ function getProjectPreviewData(projectId) {
     rows: rows,
     totals: totals
   };
-}
-
-function exportProjectToDraft(projectId) {
-  var lock = LockService.getDocumentLock();
-  lock.waitLock(10000);
-  try {
-    ensureCoreSheets_();
-    var project = findProjectById_(projectId);
-    if (!project) throw new Error('Проект не найден.');
-
-    var entries = loadEntries_(projectId);
-    if (!entries.length) return { ok: true, rows: 0 };
-
-    var rows = [];
-    var exportDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM.yyyy');
-    var client = String(project.client || '').trim();
-    var projectName = String(project.name || '').trim();
-
-    for (var e = 0; e < entries.length; e++) {
-      var entry = entries[e] || {};
-      var items = normalizeItems_(loadItems_(String(entry.id)));
-      for (var i = 0; i < items.length; i++) {
-        var it = items[i] || {};
-        rows.push([
-          exportDate,
-          client,
-          projectName,
-          String(entry.type || ''),
-          String(entry.group || ''),
-          String(entry.category || ''),
-          String(it.position || ''),
-          toNumber_(it.qty, 0),
-          toNumber_(it.halls, 0),
-          toNumber_(it.days, 0),
-          toNumber_(it.coef, 1),
-          toNumber_(it.unitCost, 0)
-        ]);
-      }
-    }
-
-    if (!rows.length) return { ok: true, rows: 0 };
-
-    var sh = getOrCreateDraftSheet_();
-    var startRow = sh.getLastRow() + 1;
-    sh.getRange(startRow, 1, rows.length, 12).setValues(rows);
-    return { ok: true, rows: rows.length };
-  } finally {
-    lock.releaseLock();
-  }
 }
 
 function exportProjectToClientSheet(projectId) {
@@ -235,15 +188,14 @@ function exportProjectToClientSheet(projectId) {
     sh.setColumnWidth(9, 560);     // I
     sh.setColumnWidth(10, 10);     // J
 
-    // Лого (B2:I4)
+    // Лого (B2:I4) — вставка изображением, без формулы
     var logoUrl = 'https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/i/iV0aCiBRuy9JCQ';
     sh.setRowHeights(2, 3, 42);
     var logoRange = sh.getRange('B2:I4');
     logoRange.clearContent();
     logoRange.merge();
     logoRange.setHorizontalAlignment('left').setVerticalAlignment('middle');
-    var formula = '=IMAGE("' + logoUrl + '")';
-    sh.getRange(2, 2).setFormula(formula);
+    insertLogoImage_(sh, logoUrl, 2, 2, 8, 3);
 
 
     var START_ROW = 5; // шапка под лого
@@ -784,15 +736,35 @@ function saveEntryAll(entryId, meta, items) {
   }
 }
 
-function getOrCreateDraftSheet_() {
-  var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName('Черновик');
-  if (!sh) sh = ss.insertSheet('Черновик');
+function insertLogoImage_(sheet, logoUrl, startCol, startRow, colsCount, rowsCount) {
+  try {
+    var response = UrlFetchApp.fetch(String(logoUrl || ''), { muteHttpExceptions: true });
+    var code = Number(response && response.getResponseCode ? response.getResponseCode() : 0);
+    if (code < 200 || code >= 300) return null;
 
-  var headers = ['Дата', 'Клиент', 'Проект', 'Тип', 'Группа', 'Категория', 'Позиция', 'Кол-во', 'Залов', 'Дней', 'Коэф.', 'Цена'];
-  sh.getRange(1, 1, 1, headers.length).setValues([headers]);
-  sh.setFrozenRows(1);
-  return sh;
+    var blob = response.getBlob();
+    if (!blob) return null;
+
+    var img = sheet.insertImage(blob, startCol, startRow);
+    if (!img) return null;
+
+    var targetWidth = 0;
+    for (var c = 0; c < colsCount; c++) {
+      targetWidth += sheet.getColumnWidth(startCol + c);
+    }
+
+    var targetHeight = 0;
+    for (var r = 0; r < rowsCount; r++) {
+      targetHeight += sheet.getRowHeight(startRow + r);
+    }
+
+    if (img.setWidth && targetWidth > 0) img.setWidth(targetWidth);
+    if (img.setHeight && targetHeight > 0) img.setHeight(targetHeight);
+    return img;
+  } catch (err) {
+    Logger.log('insertLogoImage_ failed: ' + err);
+    return null;
+  }
 }
 
 function sanitizeSheetPart_(value) {
