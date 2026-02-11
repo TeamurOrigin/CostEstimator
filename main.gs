@@ -147,7 +147,7 @@ function getProjectPreviewData(projectId) {
   };
 }
 
-function exportProjectToClientSheet(projectId) {
+function exportProjectToClientSheet(projectId, optSpreadsheetId) {
   var lock = LockService.getDocumentLock();
   lock.waitLock(10000);
   try {
@@ -169,9 +169,9 @@ function exportProjectToClientSheet(projectId) {
 
     var client = String(project.client || '').trim();
     var projectName = String(project.name || '').trim();
-    var sheetName = makeUniqueSheetName_(buildClientProjectSheetName_(client, projectName));
+    var ss = optSpreadsheetId ? SpreadsheetApp.openById(String(optSpreadsheetId)) : SpreadsheetApp.getActive();
+    var sheetName = makeUniqueSheetName_(buildClientProjectSheetName_(client, projectName), ss);
 
-    var ss = SpreadsheetApp.getActive();
     var sh = ss.insertSheet(sheetName);
 
     // Оставляем только A:J (до столбца J включительно). Удаляем K:...
@@ -362,16 +362,18 @@ function exportProjectToClientSheet(projectId) {
 }
 
 function exportProjectToPdf(projectId) {
-  var res = exportProjectToClientSheet(projectId);
-  if (!res || !res.rows) return { ok: true, rows: 0, fileName: '', downloadUrl: '' };
-
-  var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName(String(res.sheetName || ''));
-  if (!sh) throw new Error('Лист экспорта не найден.');
+  var tempSpreadsheet = SpreadsheetApp.create('tmp_pdf_export_' + Utilities.getUuid());
+  var tempSpreadsheetId = tempSpreadsheet.getId();
 
   try {
+    var res = exportProjectToClientSheet(projectId, tempSpreadsheetId);
+    if (!res || !res.rows) return { ok: true, rows: 0, fileName: '', downloadUrl: '' };
+
+    var sh = tempSpreadsheet.getSheetByName(String(res.sheetName || ''));
+    if (!sh) throw new Error('Лист экспорта не найден.');
+
     var fileName = String(res.sheetName || 'Смета') + '.pdf';
-    var pdfBlob = exportSheetPdfBlob_(ss.getId(), sh.getSheetId(), fileName);
+    var pdfBlob = exportSheetPdfBlob_(tempSpreadsheetId, sh.getSheetId(), fileName);
     var file = DriveApp.createFile(pdfBlob).setName(fileName);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
@@ -385,7 +387,11 @@ function exportProjectToPdf(projectId) {
       downloadUrl: 'https://drive.google.com/uc?export=download&id=' + file.getId()
     };
   } finally {
-    ss.deleteSheet(sh);
+    try {
+      DriveApp.getFileById(tempSpreadsheetId).setTrashed(true);
+    } catch (err) {
+      Logger.log('exportProjectToPdf temp spreadsheet cleanup failed: ' + err);
+    }
   }
 }
 
@@ -914,8 +920,8 @@ function buildClientProjectSheetName_(client, projectName) {
   return base;
 }
 
-function makeUniqueSheetName_(baseName) {
-  var ss = SpreadsheetApp.getActive();
+function makeUniqueSheetName_(baseName, optSpreadsheet) {
+  var ss = optSpreadsheet || SpreadsheetApp.getActive();
   var base = sanitizeSheetPart_(baseName) || 'Лист экспорта';
   if (base.length > 95) base = base.slice(0, 95);
 
