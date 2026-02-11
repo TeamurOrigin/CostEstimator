@@ -126,12 +126,13 @@ function exportProjectToClientSheet(projectId) {
     var entries = loadEntries_(projectId);
     if (!entries.length) return { ok: true, rows: 0, sheetName: '' };
 
+    // Сортировка как в образце: Type -> Group -> Category
     entries.sort(function(a, b) {
+      var at = String(a.type || '').localeCompare(String(b.type || ''), 'ru');
+      if (at) return at;
       var ag = String(a.group || '').localeCompare(String(b.group || ''), 'ru');
       if (ag) return ag;
-      var ac = String(a.category || '').localeCompare(String(b.category || ''), 'ru');
-      if (ac) return ac;
-      return String(a.type || '').localeCompare(String(b.type || ''), 'ru');
+      return String(a.category || '').localeCompare(String(b.category || ''), 'ru');
     });
 
     var client = String(project.client || '').trim();
@@ -141,103 +142,175 @@ function exportProjectToClientSheet(projectId) {
     var ss = SpreadsheetApp.getActive();
     var sh = ss.insertSheet(sheetName);
 
-    sh.setHiddenGridlines(false);
-    sh.setColumnWidths(2, 1, 420); // B
-    sh.setColumnWidths(3, 4, 56);  // C-F
-    sh.setColumnWidths(7, 2, 120); // G-H
-    sh.setColumnWidths(9, 1, 620); // I
+    // В образце сетка скрыта (линии только от border)
+    sh.setHiddenGridlines(true);
 
-    sh.getRange(4, 2, 1, 8).setValues([['Наименование позиции', 'Кол-во', 'Залов', 'Дней', 'Коэф.', 'Стоимость за ед.', 'Итоговая стоимость', 'Комментарии']]);
-    sh.getRange(4, 2, 1, 8)
-      .setFontWeight('bold')
-      .setFontFamily('Arial')
-      .setFontSize(11)
-      .setHorizontalAlignment('center')
-      .setVerticalAlignment('middle')
-      .setBackground('#ffffff')
-      .setBorder(true, true, true, true, true, true, '#d0d0d0', SpreadsheetApp.BorderStyle.SOLID);
+    // Колонки как в шаблоне (B:I)
+    sh.setColumnWidths(2, 1, 320); // B Наименование
+    sh.setColumnWidths(3, 4, 56);  // C-F Кол-во/Залов/Дней/Коэф.
+    sh.setColumnWidths(7, 2, 120); // G-H Стоимость/Итого
+    sh.setColumnWidths(9, 1, 560); // I Комментарии
 
-    var row = 5;
-    sh.getRange(row, 2, 1, 8).merge();
-    sh.getRange(row, 2)
-      .setValue(String(projectName || 'Проект'))
-      .setFontWeight('bold')
-      .setFontSize(22)
-      .setFontFamily('Arial')
-      .setHorizontalAlignment('center')
-      .setVerticalAlignment('middle')
-      .setBackground('#3f3f3f')
-      .setFontColor('#ffffff')
-      .setBorder(true, true, true, true, true, true, '#3f3f3f', SpreadsheetApp.BorderStyle.SOLID);
-    sh.setRowHeight(row, 40);
-    row++;
+    var START_ROW = 4; // шапка в 4-й строке
+    var START_COL = 2; // B
+    var COLS = 8;       // B..I
 
-    var rowsCount = 0;
+    var rows = [];
+    var kinds = []; // hdr | type | group | category | item
+
+    // Шапка таблицы (перенос в "Итоговая стоимость")
+    rows.push(['Наименование позиции', 'Кол-во', 'Залов', 'Дней', 'Коэф.', 'Стоимость за ед.', 'Итоговая\nстоимость', 'Комментарии']);
+    kinds.push('hdr');
+
+    var currentType = '';
     var currentGroup = '';
     var currentCategory = '';
 
+    var rowsCount = 0;
+
     for (var e = 0; e < entries.length; e++) {
       var entry = entries[e] || {};
+      var typeLabel = String(entry.type || '').trim();
       var groupLabel = String(entry.group || '').trim();
       var categoryLabel = String(entry.category || '').trim();
 
+      if (typeLabel && typeLabel !== currentType) {
+        rows.push([typeLabel, '', '', '', '', '', '', '']);
+        kinds.push('type');
+        currentType = typeLabel;
+        currentGroup = '';
+        currentCategory = '';
+      }
+
       if (groupLabel && groupLabel !== currentGroup) {
-        sh.getRange(row, 2, 1, 8).merge();
-        sh.getRange(row, 2)
-          .setValue(groupLabel)
-          .setFontWeight('bold')
-          .setFontSize(26)
-          .setFontFamily('Arial')
-          .setHorizontalAlignment('center')
-          .setVerticalAlignment('middle')
-          .setBackground('#ffffff')
-          .setBorder(true, true, true, true, true, true, '#d0d0d0', SpreadsheetApp.BorderStyle.SOLID);
-        sh.setRowHeight(row, 34);
-        row++;
+        rows.push([groupLabel, '', '', '', '', '', '', '']);
+        kinds.push('group');
         currentGroup = groupLabel;
         currentCategory = '';
       }
 
       if (categoryLabel && categoryLabel !== currentCategory) {
-        sh.getRange(row, 2, 1, 8).merge();
-        sh.getRange(row, 2)
-          .setValue(categoryLabel)
-          .setFontStyle('italic')
-          .setFontColor('#9ca3af')
-          .setFontSize(18)
-          .setFontFamily('Arial')
-          .setHorizontalAlignment('center')
-          .setVerticalAlignment('middle')
-          .setBackground('#ffffff')
-          .setBorder(true, true, true, true, true, true, '#d0d0d0', SpreadsheetApp.BorderStyle.SOLID);
-        sh.setRowHeight(row, 27);
-        row++;
+        rows.push([categoryLabel, '', '', '', '', '', '', '']);
+        kinds.push('category');
         currentCategory = categoryLabel;
       }
 
       var items = normalizeItems_(loadItems_(String(entry.id)));
+      items.sort(function(x, y) {
+        return String(x.position || '').localeCompare(String(y.position || ''), 'ru');
+      });
+
       for (var i = 0; i < items.length; i++) {
         var it = items[i] || {};
-        var lineTotal = toNumber_(it.qty, 0) * toNumber_(it.halls, 0) * toNumber_(it.days, 0) * toNumber_(it.eventDays, 1) * toNumber_(it.coef, 1) * toNumber_(it.unitCost, 0);
-        sh.getRange(row, 2, 1, 8).setValues([[String(it.position || ''), toNumber_(it.qty, 0), toNumber_(it.halls, 0), toNumber_(it.days, 0), toNumber_(it.coef, 1), toNumber_(it.unitCost, 0), lineTotal, String(it.comment || '')]]);
-        sh.getRange(row, 2, 1, 8)
-          .setFontFamily('Arial')
-          .setFontSize(11)
-          .setVerticalAlignment('middle')
-          .setBackground('#ffffff')
-          .setBorder(true, true, true, true, true, true, '#d0d0d0', SpreadsheetApp.BorderStyle.SOLID);
-        sh.setRowHeight(row, 29);
-        row++;
+        var qty = toNumber_(it.qty, 0);
+        var halls = toNumber_(it.halls, 0);
+        var days = toNumber_(it.days, 0);
+        var eventDays = toNumber_(it.eventDays, 1);
+        var coef = toNumber_(it.coef, 1);
+        var unitCost = toNumber_(it.unitCost, 0);
+        var lineTotal = qty * halls * days * eventDays * coef * unitCost;
+
+        rows.push([
+          String(it.position || ''),
+          qty,
+          halls,
+          days,
+          coef,
+          unitCost,
+          lineTotal,
+          String(it.comment || '')
+        ]);
+        kinds.push('item');
         rowsCount++;
       }
     }
 
-    var dataRows = Math.max(row - 6, 1);
-    sh.getRange(6, 3, dataRows, 5).setHorizontalAlignment('center');
-    sh.getRange(6, 7, dataRows, 2).setNumberFormat('#,##0"₽"');
-    sh.getRange(6, 2, dataRows, 1).setHorizontalAlignment('left');
-    sh.getRange(6, 9, dataRows, 1).setHorizontalAlignment('left');
+    if (!rowsCount) return { ok: true, rows: 0, sheetName: sheetName };
 
+    // Запись значений одним пакетом
+    sh.getRange(START_ROW, START_COL, rows.length, COLS).setValues(rows);
+
+    var tableRange = sh.getRange(START_ROW, START_COL, rows.length, COLS);
+
+    // База стиля (Nunito + белый фон + тонкие границы)
+    tableRange
+      .setFontFamily('Nunito')
+      .setFontSize(10)
+      .setVerticalAlignment('middle')
+      .setBackground('#ffffff')
+      .setBorder(true, true, true, true, true, true, '#d0d0d0', SpreadsheetApp.BorderStyle.SOLID);
+
+    // Шапка
+    var hdr = sh.getRange(START_ROW, START_COL, 1, COLS);
+    hdr
+      .setFontWeight('bold')
+      .setFontSize(11)
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle')
+      .setWrap(true);
+    sh.setRowHeight(START_ROW, 34);
+
+    // Форматирование “тела” (по колонкам)
+    var bodyRows = rows.length - 1;
+    if (bodyRows > 0) {
+      sh.getRange(START_ROW + 1, START_COL, bodyRows, COLS).setWrap(false);
+
+      sh.getRange(START_ROW + 1, 2, bodyRows, 1).setHorizontalAlignment('left').setWrap(true);   // B
+      sh.getRange(START_ROW + 1, 3, bodyRows, 4).setHorizontalAlignment('center');                // C-F
+      sh.getRange(START_ROW + 1, 7, bodyRows, 2).setHorizontalAlignment('right');                 // G-H
+      sh.getRange(START_ROW + 1, 9, bodyRows, 1).setHorizontalAlignment('left').setWrap(true);    // I
+
+      // Форматы чисел
+      sh.getRange(START_ROW + 1, 3, bodyRows, 3).setNumberFormat('0');        // C-E
+      sh.getRange(START_ROW + 1, 6, bodyRows, 1).setNumberFormat('0.##');     // F
+      sh.getRange(START_ROW + 1, 7, bodyRows, 2).setNumberFormat('#,##0"₽"'); // G-H
+    }
+
+    // Строковые стили + merge как в шаблоне
+    for (var r = 0; r < kinds.length; r++) {
+      var kind = kinds[r];
+      var sheetRow = START_ROW + r;
+
+      if (kind === 'type') {
+        var rngT = sh.getRange(sheetRow, START_COL, 1, COLS);
+        rngT.merge();
+        rngT
+          .setFontWeight('bold')
+          .setFontSize(12)
+          .setHorizontalAlignment('center')
+          .setVerticalAlignment('middle')
+          .setBackground('#2f2f2f')
+          .setFontColor('#ffffff');
+        sh.setRowHeight(sheetRow, 24);
+      } else if (kind === 'group') {
+        var rngG = sh.getRange(sheetRow, START_COL, 1, COLS);
+        rngG.merge();
+        rngG
+          .setFontWeight('bold')
+          .setFontSize(12)
+          .setHorizontalAlignment('center')
+          .setVerticalAlignment('middle')
+          .setBackground('#ffffff')
+          .setFontColor('#111827');
+        sh.setRowHeight(sheetRow, 22);
+      } else if (kind === 'category') {
+        var rngC = sh.getRange(sheetRow, START_COL, 1, COLS);
+        rngC.merge();
+        rngC
+          .setFontWeight('normal')
+          .setFontStyle('italic')
+          .setFontSize(11)
+          .setHorizontalAlignment('center')
+          .setVerticalAlignment('middle')
+          .setBackground('#ffffff')
+          .setFontColor('#9ca3af');
+        sh.setRowHeight(sheetRow, 20);
+      } else if (kind === 'item') {
+        sh.setRowHeight(sheetRow, 22);
+      }
+    }
+
+    // Закрепляем шапку + первую “чёрную плашку”
     sh.setFrozenRows(5);
 
     return { ok: true, rows: rowsCount, sheetName: sheetName };
@@ -245,6 +318,7 @@ function exportProjectToClientSheet(projectId) {
     lock.releaseLock();
   }
 }
+
 
 function createProject(payload) {
   var lock = LockService.getDocumentLock();
