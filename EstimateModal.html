@@ -579,6 +579,13 @@
     var el=$('exportFolderId');
     return String(el && el.value ? el.value : '').trim();
   }
+  function saveExportFolderId(btn){
+    var id=getExportFolderId();
+    callGs(btn,'Сохранение папки экспорта…','setExportFolderId',[id],function(res){
+      var saved=String(res && res.folderId ? res.folderId : '');
+      setStatus(saved ? 'ID папки экспорта сохранён' : 'ID папки экспорта очищен');
+    });
+  }
   function updateExportButtons(){
     var disabled = !selectedProjectId;
     var btnPreview=$('btnPreview');
@@ -1337,6 +1344,9 @@ function numberFmt(n){
     callGs(btn,'Загрузка…','getBootstrapData',[],function(data){
       boot=data;
 
+      var exportFolderEl=$('exportFolderId');
+      if(exportFolderEl) exportFolderEl.value=String(boot && boot.exportFolderId ? boot.exportFolderId : '');
+
       initEntryDropdowns(arr(boot.types), arr(boot.categories));
       refreshClientSuggestions();
       refreshExistingClientDropdowns();
@@ -1502,6 +1512,16 @@ function numberFmt(n){
     $('btnPreview').addEventListener('click', function(e){ openProjectPreview(e.currentTarget); });
     $('btnExportSheet').addEventListener('click', function(e){ exportProjectToSheet(e.currentTarget); });
     $('btnExportPdf').addEventListener('click', function(e){ exportProjectToPdf(e.currentTarget); });
+    var exportFolderEl=$('exportFolderId');
+    if(exportFolderEl){
+      exportFolderEl.addEventListener('blur', function(e){ saveExportFolderId(e.currentTarget); });
+      exportFolderEl.addEventListener('keydown', function(e){
+        if(e.key==='Enter'){
+          e.preventDefault();
+          saveExportFolderId(e.currentTarget);
+        }
+      });
+    }
 
     $('dlgOk').addEventListener('click', function(){ closeDialog(true); });
     $('dlgCancel').addEventListener('click', function(){ closeDialog(false); });

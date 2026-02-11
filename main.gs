@@ -8,6 +8,7 @@ var ITEMS_STORE_PREFIX = 'cs_items_v3_';
 var TEMP_PDF_CLEANUP_KEY = 'cs_temp_pdf_cleanup_v1';
 var TEMP_PDF_CLEANUP_TRIGGER = 'cleanupTempPdfFiles_';
 var TEMP_PDF_TTL_MS = 10 * 60 * 1000;
+var EXPORT_FOLDER_ID_KEY = 'cs_export_folder_id_v1';
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Смета')
@@ -51,8 +52,32 @@ function getBootstrapData() {
     positionsByCategory: ref.positionsByCategory,
     types: ref.types,
     pricesByPosition: ref.pricesByPosition,
-    clientsDbRows: readClientsDbRows_()
+    clientsDbRows: readClientsDbRows_(),
+    exportFolderId: getExportFolderId_()
   };
+}
+
+function getExportFolderId_() {
+  var val = PropertiesService.getDocumentProperties().getProperty(EXPORT_FOLDER_ID_KEY);
+  return String(val || '').trim();
+}
+
+function setExportFolderId(folderId) {
+  var id = String(folderId || '').trim();
+  var props = PropertiesService.getDocumentProperties();
+  if (!id) {
+    props.deleteProperty(EXPORT_FOLDER_ID_KEY);
+    return { ok: true, folderId: '' };
+  }
+
+  try {
+    DriveApp.getFolderById(id);
+  } catch (err) {
+    throw new Error('Папка для экспорта не найдена или нет доступа.');
+  }
+
+  props.setProperty(EXPORT_FOLDER_ID_KEY, id);
+  return { ok: true, folderId: id };
 }
 
 function getProjectEntries(projectId) {
@@ -402,6 +427,7 @@ function placeFileInFolder_(file, folderId) {
 }
 
 function exportProjectToSpreadsheet(projectId, targetFolderId) {
+  targetFolderId = String(targetFolderId || '').trim() || getExportFolderId_();
   var target = SpreadsheetApp.create('tmp_sheet_export_' + Utilities.getUuid());
   var targetId = target.getId();
 
@@ -432,6 +458,7 @@ function exportProjectToSpreadsheet(projectId, targetFolderId) {
 }
 
 function exportProjectToPdf(projectId, targetFolderId) {
+  targetFolderId = String(targetFolderId || '').trim() || getExportFolderId_();
   var tempSpreadsheet = SpreadsheetApp.create('tmp_pdf_export_' + Utilities.getUuid());
   var tempSpreadsheetId = tempSpreadsheet.getId();
 
