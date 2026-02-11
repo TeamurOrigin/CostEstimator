@@ -188,6 +188,60 @@
     .dlgB{padding:12px 14px;color:rgba(231,238,252,.92);line-height:1.35}
     .dlgActions{padding:12px 14px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
 
+    .previewOverlay{
+      position:fixed;inset:0;z-index:10000;
+      background:rgba(0,0,0,.68);
+      display:flex;align-items:center;justify-content:center;
+      padding:14px;
+    }
+    .previewOverlay.hidden{display:none}
+    .previewModal{
+      width:min(1180px, calc(100vw - 28px));
+      max-height:calc(100vh - 28px);
+      border:1px solid var(--border);
+      border-radius:18px;
+      background:linear-gradient(180deg, rgba(15,23,42,.92), rgba(2,6,23,.78));
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      display:flex;flex-direction:column;
+    }
+    .previewH{
+      padding:12px 14px;border-bottom:1px solid var(--border2);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      font-weight:950;
+    }
+    .previewTitle{font-size:14px}
+    .previewMeta{font-size:11px;color:var(--muted)}
+    .previewB{padding:12px 14px;overflow:auto}
+    .previewTypeRow td,
+    .previewGroupRow td,
+    .previewCategoryRow td{
+      font-weight:950;
+      color:rgba(149,166,199,.94);
+      background:rgba(2,6,23,.48);
+    }
+    .previewTypeRow td{background:rgba(56,189,248,.14);color:#dbeafe}
+    .previewGroupRow td{background:rgba(99,102,241,.10);padding-left:18px}
+    .previewCategoryRow td{background:rgba(52,211,153,.10);padding-left:30px}
+    .previewItemName{padding-left:42px}
+    .previewTotals{
+      margin-top:10px;
+      border:1px solid var(--border2);
+      border-radius:12px;
+      overflow:hidden;
+      background:rgba(2,6,23,.26);
+    }
+    .previewTotals table td{
+      font-weight:950;
+      border-bottom:1px solid rgba(148,163,184,.11);
+    }
+    .previewTotals table tr:last-child td{border-bottom:none}
+    .previewActions{
+      padding:12px 14px;
+      border-top:1px solid var(--border2);
+      display:flex;justify-content:flex-end;
+    }
+
     .type-dd-btn{
       width:100%;
       height:34px;
@@ -299,6 +353,7 @@
     <div class="top">
       <div class="title">Конструктор сметы</div>
       <div class="topActions">
+        <button class="btn mini" id="btnPreview" disabled>Предпросмотр</button>
         <button class="btn mini green" id="btnExport" disabled>Экспорт</button>
         <button class="btn mini acc" id="btnExportSheet" disabled>Экспорт на лист</button>
         <div class="status" id="status">Загрузка…</div>
@@ -428,6 +483,50 @@
     </div>
   </div>
 
+  <div id="previewOverlay" class="previewOverlay hidden" aria-hidden="true">
+    <div class="previewModal" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+      <div class="previewH">
+        <div>
+          <div class="previewTitle" id="previewTitle">Предпросмотр проекта</div>
+          <div class="previewMeta" id="previewMeta">—</div>
+        </div>
+        <button class="btn mini" id="btnClosePreviewTop">Закрыть</button>
+      </div>
+
+      <div class="previewB">
+        <div class="tableShell" style="max-height:52vh">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:11%">Тип</th>
+                <th style="width:11%">Группа</th>
+                <th style="width:11%">Категория</th>
+                <th style="width:25%">Позиция</th>
+                <th class="th-right" style="width:7%">Кол-во</th>
+                <th class="th-right" style="width:7%">Залов</th>
+                <th class="th-right" style="width:7%">Дней</th>
+                <th class="th-right" style="width:7%">Коэф.</th>
+                <th class="th-right" style="width:7%">Цена</th>
+                <th class="th-right" style="width:7%">Сумма</th>
+              </tr>
+            </thead>
+            <tbody id="previewBody"></tbody>
+          </table>
+        </div>
+
+        <div class="previewTotals">
+          <table>
+            <tbody id="previewTotalsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="previewActions">
+        <button class="btn" id="btnClosePreview">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
 <script>
   var boot=null;
   var selectedProjectId='';
@@ -448,13 +547,186 @@
   function setStatus(t){$('status').textContent=t}
   function updateExportButtons(){
     var disabled = !selectedProjectId;
+    var btnPreview=$('btnPreview');
     var btnDraft=$('btnExport');
     var btnSheet=$('btnExportSheet');
+    if(btnPreview) btnPreview.disabled=disabled;
     if(btnDraft) btnDraft.disabled=disabled;
     if(btnSheet) btnSheet.disabled=disabled;
   }
   function arr(a){return a&&a.length?a:[]}
   function money(n){var x=Number(n||0);return x.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})}
+  function numberFmt(n){
+    var x=Number(n||0);
+    return x.toLocaleString('ru-RU',{minimumFractionDigits:0,maximumFractionDigits:3});
+  }
+
+  function showPreviewModal(){
+    $('previewOverlay').classList.remove('hidden');
+  }
+
+  function closePreviewModal(){
+    $('previewOverlay').classList.add('hidden');
+  }
+
+  function renderPreviewData(res){
+    var body=$('previewBody');
+    var totalsBody=$('previewTotalsBody');
+    body.innerHTML='';
+    totalsBody.innerHTML='';
+
+    var project = res && res.project ? res.project : {};
+    var rows = arr(res && res.rows);
+    var totals = res && res.totals ? res.totals : {};
+    $('previewMeta').textContent = (project.client || '—') + ' • ' + (project.name || '—') + (project.tariff ? (' • ' + project.tariff) : '');
+
+    if(!rows.length){
+      var tr0=document.createElement('tr');
+      var td0=document.createElement('td');
+      td0.colSpan=10;
+      td0.style.color='rgba(149,166,199,.85)';
+      td0.style.padding='12px 10px';
+      td0.textContent='В проекте пока нет данных для предпросмотра';
+      tr0.appendChild(td0);
+      body.appendChild(tr0);
+    }
+
+    function addRow(cls, label, t){
+      var tr=document.createElement('tr');
+      if(cls) tr.className=cls;
+
+      var tdType=document.createElement('td');
+      tdType.textContent = label.type || '';
+      var tdGroup=document.createElement('td');
+      tdGroup.textContent = label.group || '';
+      var tdCat=document.createElement('td');
+      tdCat.textContent = label.category || '';
+      var tdPos=document.createElement('td');
+      tdPos.textContent = label.position || '';
+      if(label.positionClass) tdPos.className = label.positionClass;
+
+      tr.appendChild(tdType);
+      tr.appendChild(tdGroup);
+      tr.appendChild(tdCat);
+      tr.appendChild(tdPos);
+
+      var nums=[t.qty, t.halls, t.days, t.coef, t.unitCost, t.sum];
+      for(var n=0;n<nums.length;n++){
+        var td=document.createElement('td');
+        td.className='num';
+        if(n===3){
+          td.textContent=numberFmt(nums[n]||0);
+        } else if(n===4 || n===5){
+          td.textContent=money(nums[n]||0);
+        } else {
+          td.textContent=numberFmt(nums[n]||0);
+        }
+        tr.appendChild(td);
+      }
+      body.appendChild(tr);
+    }
+
+    function makeTotals(){ return {qty:0,halls:0,days:0,coef:0,coefCount:0,sum:0,count:0}; }
+    function addTotals(dst, r){
+      dst.qty += Number(r.qty||0);
+      dst.halls += Number(r.halls||0);
+      dst.days += Number(r.days||0);
+      dst.coef += Number(r.coef||0);
+      dst.coefCount += 1;
+      dst.sum += Number(r.lineTotal||0);
+      dst.count += 1;
+    }
+    function finalTotals(t){
+      return {
+        qty:t.qty,
+        halls:t.halls,
+        days:t.days,
+        coef:t.coefCount ? (t.coef/t.coefCount) : 0,
+        unitCost:t.qty ? (t.sum/t.qty) : 0,
+        sum:t.sum
+      };
+    }
+
+    var tree={};
+    for(var i=0;i<rows.length;i++){
+      var r=rows[i]||{};
+      var typeKey=String(r.type||'Без типа');
+      var groupKey=String(r.group||'Без группы');
+      var catKey=String(r.category||'Без категории');
+      if(!tree[typeKey]) tree[typeKey]={totals:makeTotals(), groups:{}};
+      if(!tree[typeKey].groups[groupKey]) tree[typeKey].groups[groupKey]={totals:makeTotals(), categories:{}};
+      if(!tree[typeKey].groups[groupKey].categories[catKey]) tree[typeKey].groups[groupKey].categories[catKey]={totals:makeTotals(), items:[]};
+      tree[typeKey].groups[groupKey].categories[catKey].items.push(r);
+      addTotals(tree[typeKey].totals, r);
+      addTotals(tree[typeKey].groups[groupKey].totals, r);
+      addTotals(tree[typeKey].groups[groupKey].categories[catKey].totals, r);
+    }
+
+    var typeNames=Object.keys(tree).sort(function(a,b){ return a.localeCompare(b,'ru'); });
+    for(var ti=0;ti<typeNames.length;ti++){
+      var typeName=typeNames[ti];
+      var tNode=tree[typeName];
+      addRow('previewTypeRow', {type:typeName, position:'Итого по типу'}, finalTotals(tNode.totals));
+
+      var groupNames=Object.keys(tNode.groups).sort(function(a,b){ return a.localeCompare(b,'ru'); });
+      for(var gi=0;gi<groupNames.length;gi++){
+        var groupName=groupNames[gi];
+        var gNode=tNode.groups[groupName];
+        addRow('previewGroupRow', {group:groupName, position:'Итого по группе'}, finalTotals(gNode.totals));
+
+        var catNames=Object.keys(gNode.categories).sort(function(a,b){ return a.localeCompare(b,'ru'); });
+        for(var ci=0;ci<catNames.length;ci++){
+          var catName=catNames[ci];
+          var cNode=gNode.categories[catName];
+          addRow('previewCategoryRow', {category:catName, position:'Итого по категории'}, finalTotals(cNode.totals));
+
+          for(var ii=0;ii<cNode.items.length;ii++){
+            var item=cNode.items[ii]||{};
+            addRow('', {
+              type:'', group:'', category:'',
+              position:String(item.position||''),
+              positionClass:'previewItemName'
+            }, {
+              qty:item.qty,
+              halls:item.halls,
+              days:item.days,
+              coef:item.coef,
+              unitCost:item.unitCost,
+              sum:item.lineTotal
+            });
+          }
+        }
+      }
+    }
+
+    addRow('previewTypeRow', {position:'Общий итог'}, {
+      qty:totals.qty||0,
+      halls:totals.halls||0,
+      days:totals.days||0,
+      coef:totals.avgCoef||0,
+      unitCost:totals.avgUnitCost||0,
+      sum:totals.sum||0
+    });
+
+    function addTotalRow(label, val){
+      var tr=document.createElement('tr');
+      var td1=document.createElement('td');
+      var td2=document.createElement('td');
+      td1.style.width='72%';
+      td2.className='num';
+      td1.textContent=label;
+      td2.textContent=val;
+      tr.appendChild(td1);
+      tr.appendChild(td2);
+      totalsBody.appendChild(tr);
+    }
+
+    addTotalRow('Итого позиций', numberFmt(totals.itemsCount||0));
+    addTotalRow('Сумма Кол-во', numberFmt(totals.qty||0));
+    addTotalRow('Сумма Залов', numberFmt(totals.halls||0));
+    addTotalRow('Сумма Дней', numberFmt(totals.days||0));
+    addTotalRow('Итоговая сумма', money(totals.sum||0));
+  }
 
   function setBusy(btn,on){
     if(!btn) return;
@@ -1080,6 +1352,15 @@
     });
   }
 
+  function openProjectPreview(btn){
+    if(!selectedProjectId){ setStatus('Сначала выберите проект'); return; }
+    callGs(btn,'Подготовка предпросмотра…','getProjectPreviewData',[selectedProjectId],function(res){
+      renderPreviewData(res||{});
+      showPreviewModal();
+      setStatus('Предпросмотр готов');
+    });
+  }
+
   function deleteProject(id, btn){
     callGs(btn,'Удаление проекта…','deleteProject',[id],function(){
       if(String(id)===String(selectedProjectId)){ selectedProjectId=''; selectedProject=null; entries=[]; }
@@ -1123,13 +1404,20 @@
     $('btnRefresh').addEventListener('click', function(e){ refreshAll(e.currentTarget); });
     $('btnCreateProject').addEventListener('click', function(e){ createProject(e.currentTarget); });
     $('btnCreateEntry').addEventListener('click', function(e){ createEntry(e.currentTarget); });
+    $('btnPreview').addEventListener('click', function(e){ openProjectPreview(e.currentTarget); });
     $('btnExport').addEventListener('click', function(e){ exportProject(e.currentTarget); });
     $('btnExportSheet').addEventListener('click', function(e){ exportProjectToSheet(e.currentTarget); });
 
     $('dlgOk').addEventListener('click', function(){ closeDialog(true); });
     $('dlgCancel').addEventListener('click', function(){ closeDialog(false); });
+    $('btnClosePreview').addEventListener('click', closePreviewModal);
+    $('btnClosePreviewTop').addEventListener('click', closePreviewModal);
+    $('previewOverlay').addEventListener('click', function(e){
+      if(e.target===this) closePreviewModal();
+    });
     window.addEventListener('keydown', function(e){
       if(e.key==='Escape' && !$('dlgOverlay').classList.contains('hidden')) closeDialog(false);
+      if(e.key==='Escape' && !$('previewOverlay').classList.contains('hidden')) closePreviewModal();
     });
 
     updateExportButtons();
