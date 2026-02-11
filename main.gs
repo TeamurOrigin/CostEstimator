@@ -147,15 +147,6 @@ function exportProjectToClientSheet(projectId) {
     sh.setColumnWidths(7, 2, 120); // G-H
     sh.setColumnWidths(9, 1, 620); // I
 
-    sh.getRange('B1:H3').merge();
-    sh.getRange('B1').setValue((client ? client + ' — ' : '') + projectName);
-    sh.getRange('B1:H3')
-      .setHorizontalAlignment('left')
-      .setVerticalAlignment('middle')
-      .setFontWeight('bold')
-      .setFontSize(18)
-      .setFontFamily('Arial');
-
     sh.getRange(4, 2, 1, 8).setValues([['Наименование позиции', 'Кол-во', 'Залов', 'Дней', 'Коэф.', 'Стоимость за ед.', 'Итоговая стоимость', 'Комментарии']]);
     sh.getRange(4, 2, 1, 8)
       .setFontWeight('bold')
@@ -163,10 +154,12 @@ function exportProjectToClientSheet(projectId) {
       .setFontSize(11)
       .setHorizontalAlignment('center')
       .setVerticalAlignment('middle')
+      .setBackground('#ffffff')
       .setBorder(true, true, true, true, true, true, '#d0d0d0', SpreadsheetApp.BorderStyle.SOLID);
 
-    sh.getRange(5, 2, 1, 8).merge();
-    sh.getRange(5, 2)
+    var row = 5;
+    sh.getRange(row, 2, 1, 8).merge();
+    sh.getRange(row, 2)
       .setValue(String(projectName || 'Проект'))
       .setFontWeight('bold')
       .setFontSize(22)
@@ -174,10 +167,11 @@ function exportProjectToClientSheet(projectId) {
       .setHorizontalAlignment('center')
       .setVerticalAlignment('middle')
       .setBackground('#3f3f3f')
-      .setFontColor('#ffffff');
-    sh.setRowHeight(5, 40);
+      .setFontColor('#ffffff')
+      .setBorder(true, true, true, true, true, true, '#3f3f3f', SpreadsheetApp.BorderStyle.SOLID);
+    sh.setRowHeight(row, 40);
+    row++;
 
-    var row = 6;
     var rowsCount = 0;
     var currentGroup = '';
     var currentCategory = '';
@@ -192,10 +186,12 @@ function exportProjectToClientSheet(projectId) {
         sh.getRange(row, 2)
           .setValue(groupLabel)
           .setFontWeight('bold')
-          .setFontSize(24)
+          .setFontSize(26)
           .setFontFamily('Arial')
           .setHorizontalAlignment('center')
-          .setVerticalAlignment('middle');
+          .setVerticalAlignment('middle')
+          .setBackground('#ffffff')
+          .setBorder(true, true, true, true, true, true, '#d0d0d0', SpreadsheetApp.BorderStyle.SOLID);
         sh.setRowHeight(row, 34);
         row++;
         currentGroup = groupLabel;
@@ -208,11 +204,13 @@ function exportProjectToClientSheet(projectId) {
           .setValue(categoryLabel)
           .setFontStyle('italic')
           .setFontColor('#9ca3af')
-          .setFontSize(16)
+          .setFontSize(18)
           .setFontFamily('Arial')
           .setHorizontalAlignment('center')
-          .setVerticalAlignment('middle');
-        sh.setRowHeight(row, 26);
+          .setVerticalAlignment('middle')
+          .setBackground('#ffffff')
+          .setBorder(true, true, true, true, true, true, '#d0d0d0', SpreadsheetApp.BorderStyle.SOLID);
+        sh.setRowHeight(row, 27);
         row++;
         currentCategory = categoryLabel;
       }
@@ -222,6 +220,12 @@ function exportProjectToClientSheet(projectId) {
         var it = items[i] || {};
         var lineTotal = toNumber_(it.qty, 0) * toNumber_(it.halls, 0) * toNumber_(it.days, 0) * toNumber_(it.eventDays, 1) * toNumber_(it.coef, 1) * toNumber_(it.unitCost, 0);
         sh.getRange(row, 2, 1, 8).setValues([[String(it.position || ''), toNumber_(it.qty, 0), toNumber_(it.halls, 0), toNumber_(it.days, 0), toNumber_(it.coef, 1), toNumber_(it.unitCost, 0), lineTotal, String(it.comment || '')]]);
+        sh.getRange(row, 2, 1, 8)
+          .setFontFamily('Arial')
+          .setFontSize(11)
+          .setVerticalAlignment('middle')
+          .setBackground('#ffffff')
+          .setBorder(true, true, true, true, true, true, '#d0d0d0', SpreadsheetApp.BorderStyle.SOLID);
         sh.setRowHeight(row, 29);
         row++;
         rowsCount++;
@@ -229,12 +233,6 @@ function exportProjectToClientSheet(projectId) {
     }
 
     var dataRows = Math.max(row - 6, 1);
-    sh.getRange(6, 2, dataRows, 8)
-      .setFontFamily('Arial')
-      .setFontSize(11)
-      .setVerticalAlignment('middle')
-      .setBorder(true, true, true, true, true, true, '#d0d0d0', SpreadsheetApp.BorderStyle.SOLID);
-
     sh.getRange(6, 3, dataRows, 5).setHorizontalAlignment('center');
     sh.getRange(6, 7, dataRows, 2).setNumberFormat('#,##0"₽"');
     sh.getRange(6, 2, dataRows, 1).setHorizontalAlignment('left');
