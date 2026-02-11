@@ -377,7 +377,6 @@
         <div class="title">Конструктор сметы</div>
         <div class="topActions">
           <button class="btn mini" id="btnPreview" disabled>Предпросмотр</button>
-          <button class="btn mini green" id="btnExport" disabled>Экспорт</button>
           <button class="btn mini acc" id="btnExportSheet" disabled>Экспорт на лист</button>
         </div>
       </div>
@@ -566,10 +565,8 @@
   function updateExportButtons(){
     var disabled = !selectedProjectId;
     var btnPreview=$('btnPreview');
-    var btnDraft=$('btnExport');
     var btnSheet=$('btnExportSheet');
     if(btnPreview) btnPreview.disabled=disabled;
-    if(btnDraft) btnDraft.disabled=disabled;
     if(btnSheet) btnSheet.disabled=disabled;
   }
   function arr(a){return a&&a.length?a:[]}
@@ -1398,13 +1395,6 @@ function numberFmt(n){
   }
 
 
-  function exportProject(btn){
-    if(!selectedProjectId){ setStatus('Сначала выберите проект'); return; }
-    callGs(btn,'Экспорт в Черновик…','exportProjectToDraft',[selectedProjectId],function(res){
-      setStatus('Экспортировано строк: ' + String(Number(res && res.rows || 0)));
-    });
-  }
-
   function exportProjectToSheet(btn){
     if(!selectedProjectId){ setStatus('Сначала выберите проект'); return; }
     callGs(btn,'Экспорт на отдельный лист…','exportProjectToClientSheet',[selectedProjectId],function(res){
@@ -1466,7 +1456,6 @@ function numberFmt(n){
     $('btnCreateProject').addEventListener('click', function(e){ createProject(e.currentTarget); });
     $('btnCreateEntry').addEventListener('click', function(e){ createEntry(e.currentTarget); });
     $('btnPreview').addEventListener('click', function(e){ openProjectPreview(e.currentTarget); });
-    $('btnExport').addEventListener('click', function(e){ exportProject(e.currentTarget); });
     $('btnExportSheet').addEventListener('click', function(e){ exportProjectToSheet(e.currentTarget); });
 
     $('dlgOk').addEventListener('click', function(){ closeDialog(true); });

@@ -141,55 +141,6 @@ function getProjectPreviewData(projectId) {
   };
 }
 
-function exportProjectToDraft(projectId) {
-  var lock = LockService.getDocumentLock();
-  lock.waitLock(10000);
-  try {
-    ensureCoreSheets_();
-    var project = findProjectById_(projectId);
-    if (!project) throw new Error('Проект не найден.');
-
-    var entries = loadEntries_(projectId);
-    if (!entries.length) return { ok: true, rows: 0 };
-
-    var rows = [];
-    var exportDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM.yyyy');
-    var client = String(project.client || '').trim();
-    var projectName = String(project.name || '').trim();
-
-    for (var e = 0; e < entries.length; e++) {
-      var entry = entries[e] || {};
-      var items = normalizeItems_(loadItems_(String(entry.id)));
-      for (var i = 0; i < items.length; i++) {
-        var it = items[i] || {};
-        rows.push([
-          exportDate,
-          client,
-          projectName,
-          String(entry.type || ''),
-          String(entry.group || ''),
-          String(entry.category || ''),
-          String(it.position || ''),
-          toNumber_(it.qty, 0),
-          toNumber_(it.halls, 0),
-          toNumber_(it.days, 0),
-          toNumber_(it.coef, 1),
-          toNumber_(it.unitCost, 0)
-        ]);
-      }
-    }
-
-    if (!rows.length) return { ok: true, rows: 0 };
-
-    var sh = getOrCreateDraftSheet_();
-    var startRow = sh.getLastRow() + 1;
-    sh.getRange(startRow, 1, rows.length, 12).setValues(rows);
-    return { ok: true, rows: rows.length };
-  } finally {
-    lock.releaseLock();
-  }
-}
-
 function exportProjectToClientSheet(projectId) {
   var lock = LockService.getDocumentLock();
   lock.waitLock(10000);
@@ -782,17 +733,6 @@ function saveEntryAll(entryId, meta, items) {
   } finally {
     lock.releaseLock();
   }
-}
-
-function getOrCreateDraftSheet_() {
-  var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName('Черновик');
-  if (!sh) sh = ss.insertSheet('Черновик');
-
-  var headers = ['Дата', 'Клиент', 'Проект', 'Тип', 'Группа', 'Категория', 'Позиция', 'Кол-во', 'Залов', 'Дней', 'Коэф.', 'Цена'];
-  sh.getRange(1, 1, 1, headers.length).setValues([headers]);
-  sh.setFrozenRows(1);
-  return sh;
 }
 
 function sanitizeSheetPart_(value) {
