@@ -361,6 +361,33 @@ function exportProjectToClientSheet(projectId, optSpreadsheetId) {
   }
 }
 
+function exportProjectToSpreadsheet(projectId) {
+  var spreadsheetName = 'Смета_' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd_HHmmss');
+  var target = SpreadsheetApp.create(spreadsheetName);
+  var targetId = target.getId();
+
+  var res = exportProjectToClientSheet(projectId, targetId);
+  if (!res || !res.rows) {
+    return { ok: true, rows: 0, spreadsheetId: targetId, spreadsheetName: spreadsheetName, spreadsheetUrl: target.getUrl() };
+  }
+
+  var sheetName = String(res.sheetName || '');
+  var exportSheet = sheetName ? target.getSheetByName(sheetName) : null;
+  var firstSheet = target.getSheets()[0];
+  if (firstSheet && exportSheet && firstSheet.getSheetId() !== exportSheet.getSheetId()) {
+    target.deleteSheet(firstSheet);
+  }
+
+  return {
+    ok: true,
+    rows: Number(res.rows || 0),
+    spreadsheetId: targetId,
+    spreadsheetName: spreadsheetName,
+    spreadsheetUrl: target.getUrl(),
+    sheetName: sheetName
+  };
+}
+
 function exportProjectToPdf(projectId) {
   var tempSpreadsheet = SpreadsheetApp.create('tmp_pdf_export_' + Utilities.getUuid());
   var tempSpreadsheetId = tempSpreadsheet.getId();

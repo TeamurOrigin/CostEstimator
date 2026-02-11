@@ -377,7 +377,7 @@
         <div class="title">Конструктор сметы</div>
         <div class="topActions">
           <button class="btn mini" id="btnPreview" disabled>Предпросмотр</button>
-          <button class="btn mini acc" id="btnExportSheet" disabled>Экспорт на лист</button>
+          <button class="btn mini acc" id="btnExportSheet" disabled>Экспорт в таблицу</button>
           <button class="btn mini green" id="btnExportPdf" disabled>Экспорт в PDF</button>
         </div>
       </div>
@@ -1404,9 +1404,11 @@ function numberFmt(n){
 
   function exportProjectToSheet(btn){
     if(!selectedProjectId){ setStatus('Сначала выберите проект'); return; }
-    callGs(btn,'Экспорт на отдельный лист…','exportProjectToClientSheet',[selectedProjectId],function(res){
-      var title = String(res && res.sheetName ? res.sheetName : '');
-      setStatus('Экспорт на лист: ' + title + ' • строк: ' + String(Number(res && res.rows || 0)));
+    callGs(btn,'Создание таблицы…','exportProjectToSpreadsheet',[selectedProjectId],function(res){
+      var title = String(res && res.spreadsheetName ? res.spreadsheetName : '');
+      var url = String(res && res.spreadsheetUrl ? res.spreadsheetUrl : '');
+      setStatus('Таблица создана: ' + title + ' • строк: ' + String(Number(res && res.rows || 0)));
+      if(url) window.open(url, '_blank', 'noopener');
     });
   }
 
