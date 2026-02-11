@@ -188,6 +188,33 @@
     .dlgB{padding:12px 14px;color:rgba(231,238,252,.92);line-height:1.35}
     .dlgActions{padding:12px 14px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
 
+    .previewDialog{
+      width:min(1180px, calc(100vw - 28px));
+      max-height:calc(100vh - 28px);
+      display:flex;
+      flex-direction:column;
+    }
+    .previewBody{padding:12px 14px;overflow:auto}
+    .previewMeta{color:rgba(149,166,199,.88);font-size:11px;margin-bottom:10px}
+    .previewTableShell{
+      border:1px solid var(--border2);border-radius:14px;overflow:auto;
+      background:rgba(2,6,23,.24);box-shadow:inset 0 1px 0 rgba(255,255,255,.03)
+    }
+    .previewTable{width:100%;border-collapse:separate;border-spacing:0;font-size:11.2px}
+    .previewTable th,.previewTable td{padding:7px 8px;border-bottom:1px solid rgba(148,163,184,.11)}
+    .previewTable th{background:rgba(2,6,23,.32)}
+    .previewTable td.num{text-align:right}
+    .previewTable td.center{text-align:center}
+    .previewRowType td{background:rgba(56,189,248,.12);font-weight:950}
+    .previewRowGroup td{background:rgba(56,189,248,.07);font-weight:800}
+    .previewRowCategory td{background:rgba(148,163,184,.07);font-style:italic;color:rgba(231,238,252,.84)}
+    .previewTotals{
+      margin-top:12px;padding:10px 12px;border:1px solid var(--border2);border-radius:12px;
+      display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end;
+      background:rgba(2,6,23,.24)
+    }
+    .previewTotals b{font-size:12px}
+
     .type-dd-btn{
       width:100%;
       height:34px;
@@ -299,6 +326,7 @@
     <div class="top">
       <div class="title">Конструктор сметы</div>
       <div class="topActions">
+        <button class="btn mini" id="btnPreview" disabled>Предпросмотр</button>
         <button class="btn mini green" id="btnExport" disabled>Экспорт</button>
         <button class="btn mini acc" id="btnExportSheet" disabled>Экспорт на лист</button>
         <div class="status" id="status">Загрузка…</div>
@@ -428,6 +456,38 @@
     </div>
   </div>
 
+  <div id="previewOverlay" class="dlgOverlay hidden" aria-hidden="true">
+    <div class="dlg previewDialog" role="dialog" aria-modal="true" aria-label="Предпросмотр проекта">
+      <div class="dlgH">Предпросмотр проекта</div>
+      <div class="previewBody">
+        <div class="previewMeta" id="previewMeta">—</div>
+        <div class="previewTableShell">
+          <table class="previewTable">
+            <thead>
+              <tr>
+                <th style="width:11%">Тип</th>
+                <th style="width:11%">Группа</th>
+                <th style="width:11%">Категория</th>
+                <th style="width:26%">Позиция</th>
+                <th class="th-center" style="width:7%">Кол-во</th>
+                <th class="th-center" style="width:6%">Залов</th>
+                <th class="th-center" style="width:6%">Дней</th>
+                <th class="th-center" style="width:6%">Коэф.</th>
+                <th class="th-right" style="width:8%">Цена</th>
+                <th class="th-right" style="width:8%">Сумма</th>
+              </tr>
+            </thead>
+            <tbody id="previewBodyRows"></tbody>
+          </table>
+        </div>
+        <div class="previewTotals" id="previewTotals"></div>
+      </div>
+      <div class="dlgActions">
+        <button class="btn" id="btnClosePreview">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
 <script>
   var boot=null;
   var selectedProjectId='';
@@ -448,8 +508,10 @@
   function setStatus(t){$('status').textContent=t}
   function updateExportButtons(){
     var disabled = !selectedProjectId;
+    var btnPreview=$('btnPreview');
     var btnDraft=$('btnExport');
     var btnSheet=$('btnExportSheet');
+    if(btnPreview) btnPreview.disabled=disabled;
     if(btnDraft) btnDraft.disabled=disabled;
     if(btnSheet) btnSheet.disabled=disabled;
   }
@@ -828,6 +890,98 @@
     if(dlgResolve){ var r=dlgResolve; dlgResolve=null; r(!!result); }
   }
 
+  function formatInt(n){
+    return Number(n||0).toLocaleString('ru-RU',{maximumFractionDigits:0});
+  }
+
+  function openPreviewDialog(data){
+    var project = data && data.project ? data.project : {};
+    var rows = arr(data && data.rows);
+    var totals = data && data.totals ? data.totals : {itemsCount:0,totalQty:0,totalSum:0};
+
+    $('previewMeta').textContent =
+      'Проект: ' + String(project.name||'—') +
+      ' • Клиент: ' + String(project.client||'—') +
+      ' • Строк: ' + formatInt(rows.length);
+
+    var body=$('previewBodyRows');
+    body.innerHTML='';
+
+    if(!rows.length){
+      var tr0=document.createElement('tr');
+      var td0=document.createElement('td');
+      td0.colSpan=10;
+      td0.style.padding='12px 10px';
+      td0.style.color='rgba(149,166,199,.85)';
+      td0.textContent='В проекте пока нет позиций для предпросмотра.';
+      tr0.appendChild(td0);
+      body.appendChild(tr0);
+    } else {
+      var prevType='';
+      var prevGroup='';
+      var prevCategory='';
+      for(var i=0;i<rows.length;i++){
+        var r=rows[i]||{};
+        if(String(r.type||'')!==prevType){
+          var trType=document.createElement('tr');trType.className='previewRowType';
+          var tdType=document.createElement('td');tdType.colSpan=10;tdType.textContent='Тип: ' + String(r.type||'—');
+          trType.appendChild(tdType);body.appendChild(trType);
+          prevType=String(r.type||'');
+          prevGroup='';
+          prevCategory='';
+        }
+        if(String(r.group||'')!==prevGroup){
+          var trGroup=document.createElement('tr');trGroup.className='previewRowGroup';
+          var tdGroup=document.createElement('td');tdGroup.colSpan=10;tdGroup.textContent='Группа: ' + String(r.group||'—');
+          trGroup.appendChild(tdGroup);body.appendChild(trGroup);
+          prevGroup=String(r.group||'');
+          prevCategory='';
+        }
+        if(String(r.category||'')!==prevCategory){
+          var trCategory=document.createElement('tr');trCategory.className='previewRowCategory';
+          var tdCategory=document.createElement('td');tdCategory.colSpan=10;tdCategory.textContent='Категория: ' + String(r.category||'—');
+          trCategory.appendChild(tdCategory);body.appendChild(trCategory);
+          prevCategory=String(r.category||'');
+        }
+
+        var tr=document.createElement('tr');
+        var cells=[
+          r.type||'',
+          r.group||'',
+          r.category||'',
+          r.position||'',
+          formatInt(r.qty||0),
+          formatInt(r.halls||0),
+          formatInt(r.days||0),
+          Number(r.coef||0).toLocaleString('ru-RU',{maximumFractionDigits:2}),
+          money(r.unitCost||0),
+          money(r.sum||0)
+        ];
+        for(var c=0;c<cells.length;c++){
+          var td=document.createElement('td');
+          td.textContent=String(cells[c]);
+          if(c>=4 && c<=7) td.className='center';
+          if(c>=8) td.className='num';
+          tr.appendChild(td);
+        }
+        body.appendChild(tr);
+      }
+    }
+
+    $('previewTotals').innerHTML =
+      '<span>Позиций: <b>' + formatInt(totals.itemsCount||0) + '</b></span>' +
+      '<span>Суммарное кол-во: <b>' + formatInt(totals.totalQty||0) + '</b></span>' +
+      '<span>Итого: <b>' + money(totals.totalSum||0) + '</b></span>';
+
+    $('previewOverlay').classList.remove('hidden');
+    $('previewOverlay').setAttribute('aria-hidden','false');
+  }
+
+  function closePreviewDialog(){
+    $('previewOverlay').classList.add('hidden');
+    $('previewOverlay').setAttribute('aria-hidden','true');
+  }
+
   function renderProjects(){
     var list = arr(boot && boot.projects);
     $('pMeta').textContent = 'Проектов: ' + list.length;
@@ -1080,6 +1234,14 @@
     });
   }
 
+  function previewProject(btn){
+    if(!selectedProjectId){ setStatus('Сначала выберите проект'); return; }
+    callGs(btn,'Формирую предпросмотр…','getProjectPreviewData',[selectedProjectId],function(res){
+      openPreviewDialog(res||{});
+      setStatus('Предпросмотр готов');
+    });
+  }
+
   function deleteProject(id, btn){
     callGs(btn,'Удаление проекта…','deleteProject',[id],function(){
       if(String(id)===String(selectedProjectId)){ selectedProjectId=''; selectedProject=null; entries=[]; }
@@ -1123,13 +1285,17 @@
     $('btnRefresh').addEventListener('click', function(e){ refreshAll(e.currentTarget); });
     $('btnCreateProject').addEventListener('click', function(e){ createProject(e.currentTarget); });
     $('btnCreateEntry').addEventListener('click', function(e){ createEntry(e.currentTarget); });
+    $('btnPreview').addEventListener('click', function(e){ previewProject(e.currentTarget); });
     $('btnExport').addEventListener('click', function(e){ exportProject(e.currentTarget); });
     $('btnExportSheet').addEventListener('click', function(e){ exportProjectToSheet(e.currentTarget); });
+    $('btnClosePreview').addEventListener('click', function(){ closePreviewDialog(); });
+    $('previewOverlay').addEventListener('click', function(e){ if(e.target===this) closePreviewDialog(); });
 
     $('dlgOk').addEventListener('click', function(){ closeDialog(true); });
     $('dlgCancel').addEventListener('click', function(){ closeDialog(false); });
     window.addEventListener('keydown', function(e){
       if(e.key==='Escape' && !$('dlgOverlay').classList.contains('hidden')) closeDialog(false);
+      if(e.key==='Escape' && !$('previewOverlay').classList.contains('hidden')) closePreviewDialog();
     });
 
     updateExportButtons();
