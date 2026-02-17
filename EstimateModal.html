@@ -389,6 +389,7 @@
         <div class="title">Конструктор сметы</div>
         <div class="topActions">
           <button class="btn mini" id="btnPreview" disabled>Предпросмотр</button>
+          <button class="btn mini" id="btnExportCurrent" disabled>Экспорт</button>
           <button class="btn mini acc" id="btnExportSheet" disabled>Экспорт в таблицу</button>
           <button class="btn mini green" id="btnExportPdf" disabled>Экспорт в PDF</button>
           <input class="exportFolderInput" id="exportFolderId" placeholder="ID папки Google Drive для экспорта (необязательно)">
@@ -590,9 +591,11 @@
   function updateExportButtons(){
     var disabled = !selectedProjectId;
     var btnPreview=$('btnPreview');
+    var btnCurrent=$('btnExportCurrent');
     var btnSheet=$('btnExportSheet');
     var btnPdf=$('btnExportPdf');
     if(btnPreview) btnPreview.disabled=disabled;
+    if(btnCurrent) btnCurrent.disabled=disabled;
     if(btnSheet) btnSheet.disabled=disabled;
     if(btnPdf) btnPdf.disabled=disabled;
   }
@@ -1439,6 +1442,14 @@ function numberFmt(n){
     });
   }
 
+  function exportProjectToCurrentSheet(btn){
+    if(!selectedProjectId){ setStatus('Сначала выберите проект'); return; }
+    callGs(btn,'Экспорт в текущую таблицу…','exportProjectToClientSheet',[selectedProjectId],function(res){
+      var sheetName = String(res && res.sheetName ? res.sheetName : 'Лист');
+      setStatus('Экспорт выполнен: ' + sheetName + ' • строк: ' + String(Number(res && res.rows || 0)));
+    });
+  }
+
 
   function exportProjectToPdf(btn){
     if(!selectedProjectId){ setStatus('Сначала выберите проект'); return; }
@@ -1511,6 +1522,7 @@ function numberFmt(n){
     $('btnCreateProject').addEventListener('click', function(e){ createProject(e.currentTarget); });
     $('btnCreateEntry').addEventListener('click', function(e){ createEntry(e.currentTarget); });
     $('btnPreview').addEventListener('click', function(e){ openProjectPreview(e.currentTarget); });
+    $('btnExportCurrent').addEventListener('click', function(e){ exportProjectToCurrentSheet(e.currentTarget); });
     $('btnExportSheet').addEventListener('click', function(e){ exportProjectToSheet(e.currentTarget); });
     $('btnExportPdf').addEventListener('click', function(e){ exportProjectToPdf(e.currentTarget); });
     var exportFolderEl=$('exportFolderId');
