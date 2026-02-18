@@ -114,6 +114,16 @@
       background:rgba(2,6,23,.50)
     }
 
+    #tariffValueInput{
+      -moz-appearance:textfield;
+      appearance:textfield;
+    }
+    #tariffValueInput::-webkit-outer-spin-button,
+    #tariffValueInput::-webkit-inner-spin-button{
+      -webkit-appearance:none;
+      margin:0;
+    }
+
     .btn{
       --pulse: rgba(56,189,248,.18);
       height:34px;padding:0 12px;border-radius:12px;border:1px solid var(--border2);
@@ -449,6 +459,11 @@
             <input id="newProjectName" placeholder="Например: Энергетики">
           </div>
 
+          <div id="tariffValueRow" class="hidden" style="margin-bottom:12px">
+            <label id="tariffValueLabel">Значение тарифа</label>
+            <input id="tariffValueInput" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Введите значение">
+          </div>
+
           <div class="tableShell">
             <table>
               <thead>
@@ -575,6 +590,70 @@
   var existingDateDD=null;
   var clientsDbRows=[];
 
+  function toNumber(v, def){
+    if(def===undefined) def=0;
+    if(v==null || v==='') return def;
+    var n=Number(String(v).replace(',', '.'));
+    return isFinite(n) ? n : def;
+  }
+
+  function getTariffConfig(tariff){
+    var t=String(tariff||'').trim();
+    if(t==='Фиксированный') return {show:true,label:'Фиксированная стоимость',placeholder:'Введите фиксированную стоимость'};
+    if(t==='Тарифный') return {show:true,label:'Тарифная стоимость',placeholder:'Введите тарифную стоимость'};
+    if(t==='Процентный') return {show:true,label:'Процент скидки',placeholder:'Введите процент скидки'};
+    return {show:false,label:'',placeholder:''};
+  }
+
+  function formatTariffValue(tariff, rawValue){
+    var t=String(tariff||'').trim();
+    var val=toNumber(rawValue, 0);
+    if(t==='Процентный') return numberFmt(val) + '%';
+    return money0(val);
+  }
+
+  function tariffTitle(tariff, tariffValue){
+    var t=String(tariff||'').trim();
+    if(!t) return '';
+    var cfg=getTariffConfig(t);
+    if(!cfg.show) return t;
+    return t + ' (' + formatTariffValue(t, tariffValue) + ')';
+  }
+
+  function updateTariffValueVisibility(){
+    var tariff=(tariffDD && tariffDD.getValue ? tariffDD.getValue() : 'Обычный');
+    var cfg=getTariffConfig(tariff);
+    var row=$('tariffValueRow');
+    var label=$('tariffValueLabel');
+    var input=$('tariffValueInput');
+    if(!row || !label || !input) return;
+
+    if(!cfg.show){
+      row.classList.add('hidden');
+      input.value='';
+      input.removeAttribute('required');
+      return;
+    }
+
+    row.classList.remove('hidden');
+    label.textContent=cfg.label;
+    input.placeholder=cfg.placeholder;
+    input.setAttribute('required','required');
+  }
+
+  function collectTariffPayload(){
+    var tariff=(tariffDD && tariffDD.getValue ? tariffDD.getValue().trim() : '');
+    var cfg=getTariffConfig(tariff);
+    var tariffValue=0;
+    if(cfg.show){
+      var raw=$('tariffValueInput') ? $('tariffValueInput').value.trim() : '';
+      if(!raw){ setStatus('Укажите значение для выбранного тарифа'); return null; }
+      tariffValue=toNumber(raw, NaN);
+      if(!isFinite(tariffValue) || tariffValue < 0){ setStatus('Значение тарифа должно быть числом больше или равным 0'); return null; }
+    }
+    return {tariff:tariff, tariffValue:tariffValue};
+  }
+
   function $(id){return document.getElementById(id)}
   function setStatus(t){$('status').textContent=t}
   function getExportFolderId(){
@@ -626,7 +705,7 @@ function numberFmt(n){
 
     var project = res && res.project ? res.project : {};
     var rows = arr(res && res.rows);
-    $('previewMeta').textContent = (project.client || '—') + ' • ' + (project.name || '—') + (project.tariff ? (' • ' + project.tariff) : '');
+    $('previewMeta').textContent = (project.client || '—') + ' • ' + (project.name || '—') + (project.tariff ? (' • ' + tariffTitle(project.tariff, project.tariffValue)) : '');
 
     function makeAgg_(){ return { qty:0,halls:0,days:0,coef:0,coefSum:0,coefCount:0,unitCost:0,sum:0,items:0 }; }
     function addAgg_(a,b){
@@ -815,6 +894,35 @@ function numberFmt(n){
       addTotalRow('Средний Коэф.', numberFmt(grand.coef||0));
       addTotalRow('Сумма Цены', money0(grand.unitCost||0));
       addTotalRow('Итоговая сумма', money0(grand.sum||0));
+
+      var total=Number(grand.sum||0);
+      var tariff=String(project && project.tariff ? project.tariff : 'Обычный').trim() || 'Обычный';
+      var tariffValue=toNumber(project && project.tariffValue, 0);
+
+      if(tariff==='Фиксированный'){
+        var fixed=tariffValue;
+        addTotalRow('Сумма', money0(total));
+        addTotalRow('Скидка', money0(total-fixed));
+        addTotalRow('Сумма со скидкой', money0(fixed));
+        addTotalRow('Сумма с налогом УСН', money0(fixed/0.94));
+        addTotalRow('Сумма с налогом НДС 5%', money0((fixed/0.94)*1.05));
+      } else if(tariff==='Тарифный'){
+        var tariffCost=tariffValue;
+        addTotalRow('Сумма', money0(total));
+        addTotalRow('Скидка по тарифу', money0(tariffCost));
+        addTotalRow('Сумма с налогом УСН', money0(tariffCost));
+        addTotalRow('Сумма с налогом НДС 5%', money0(tariffCost));
+      } else if(tariff==='Процентный'){
+        var discountSum=total*(1-(tariffValue/100));
+        addTotalRow('Сумма', money0(total));
+        addTotalRow('Скидка ' + numberFmt(tariffValue) + '%', money0(discountSum));
+        addTotalRow('Сумма с налогом УСН', money0(discountSum/0.94));
+        addTotalRow('Сумма с налогом НДС 5%', money0((discountSum/0.94)*1.05));
+      } else {
+        addTotalRow('Сумма', money0(total));
+        addTotalRow('Сумма с налогом УСН', money0(total/0.94));
+        addTotalRow('Сумма с налогом НДС 5%', money0((total/0.94)*1.05));
+      }
     }
 
     draw_();
@@ -1149,8 +1257,9 @@ function numberFmt(n){
   function initTariffDropdown(){
     var mount = $('newProjectTariffMount');
     mount.innerHTML='';
-    tariffDD = createDropdown(PROJECT_TARIFFS, 'Обычный', function(){});
+    tariffDD = createDropdown(PROJECT_TARIFFS, 'Обычный', function(){ updateTariffValueVisibility(); });
     mount.appendChild(tariffDD.btn);
+    updateTariffValueVisibility();
   }
 
   function initEntryDropdowns(types, categories){
@@ -1219,7 +1328,7 @@ function numberFmt(n){
         var client=document.createElement('div');client.style.marginTop='2px';client.style.fontSize='10.5px';client.style.color='rgba(149,166,199,.92)';
         client.textContent=(p.client||'');
         var tariff=document.createElement('div');tariff.style.marginTop='2px';tariff.style.fontSize='10.5px';tariff.style.color='rgba(149,166,199,.78)';
-        tariff.textContent=(p.tariff||'');
+        tariff.textContent=tariffTitle(p.tariff, p.tariffValue);
         td1.appendChild(name);
         if(p.client) td1.appendChild(client);
         if(p.tariff) td1.appendChild(tariff);
@@ -1281,7 +1390,7 @@ function numberFmt(n){
     }
 
     $('entriesTitle').textContent='Смета • ' + (selectedProject.name||'');
-    $('eMeta').textContent='Записей: ' + entries.length + (selectedProject.tariff ? ' • ' + selectedProject.tariff : '');
+    $('eMeta').textContent='Записей: ' + entries.length + (selectedProject.tariff ? ' • ' + tariffTitle(selectedProject.tariff, selectedProject.tariffValue) : '');
     updateExportButtons();
 
     if(!entries.length){
@@ -1397,7 +1506,10 @@ function numberFmt(n){
     var mode=(projectModeDD && projectModeDD.getValue ? projectModeDD.getValue() : 'Новый клиент');
     var name=$('newProjectName').value.trim();
     var clientName=$('newClientName').value.trim();
-    var tariff=(tariffDD && tariffDD.getValue ? tariffDD.getValue().trim() : '');
+    var tariffPayload=collectTariffPayload();
+    if(!tariffPayload) return;
+    var tariff=tariffPayload.tariff;
+    var tariffValue=tariffPayload.tariffValue;
 
     if(mode==='Текущий клиент'){
       var client=(existingClientDD && existingClientDD.getValue ? existingClientDD.getValue().trim() : '');
@@ -1410,10 +1522,12 @@ function numberFmt(n){
       if(!name){ setStatus('Укажите наименование проекта'); return; }
       if(!tariff){ setStatus('Укажите тариф'); return; }
 
-      callGs(btn,'Импорт проекта…','importExistingProject',[{name:name, tariff:tariff, client:client, project:project, date:date}],function(p){
+      callGs(btn,'Импорт проекта…','importExistingProject',[{name:name, tariff:tariff, tariffValue:tariffValue, client:client, project:project, date:date}],function(p){
         $('newProjectName').value='';
         $('newClientName').value='';
+        if($('tariffValueInput')) $('tariffValueInput').value='';
         if(tariffDD && tariffDD.setValue) tariffDD.setValue('Обычный');
+        updateTariffValueVisibility();
         refreshAll(null,function(){ selectProject(p.id); });
       });
       return;
@@ -1423,10 +1537,12 @@ function numberFmt(n){
     if(!name){ setStatus('Укажите наименование проекта'); return; }
     if(!tariff){ setStatus('Укажите тариф'); return; }
 
-    callGs(btn,'Создание проекта…','createProject',[{name:name, client:clientName, tariff:tariff}],function(p){
+    callGs(btn,'Создание проекта…','createProject',[{name:name, client:clientName, tariff:tariff, tariffValue:tariffValue}],function(p){
       $('newProjectName').value='';
       $('newClientName').value='';
+      if($('tariffValueInput')) $('tariffValueInput').value='';
       if(tariffDD && tariffDD.setValue) tariffDD.setValue('Обычный');
+      updateTariffValueVisibility();
       refreshAll(null,function(){ selectProject(p.id); });
     });
   }
