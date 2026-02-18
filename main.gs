@@ -263,6 +263,7 @@ function exportProjectToClientSheet(projectId, optSpreadsheetId) {
     var currentCategory = '';
 
     var rowsCount = 0;
+    var totalProjectSum = 0;
 
     for (var e = 0; e < entries.length; e++) {
       var entry = entries[e] || {};
@@ -318,6 +319,7 @@ function exportProjectToClientSheet(projectId, optSpreadsheetId) {
         ]);
         kinds.push('item');
         rowsCount++;
+        totalProjectSum += lineTotal;
       }
     }
 
@@ -396,6 +398,63 @@ function exportProjectToClientSheet(projectId, optSpreadsheetId) {
       } else if (kind === 'item') {
         sh.setRowHeight(sheetRow, 22);
       }
+    }
+
+    var summaryRows = [];
+    var tariff = String(project && project.tariff ? project.tariff : 'Обычный').trim() || 'Обычный';
+    var tariffValue = toNumber_(project && project.tariffValue, 0);
+    if (tariff === 'Фиксированный') {
+      summaryRows.push(['Сумма:', totalProjectSum]);
+      summaryRows.push(['Скидка:', totalProjectSum - tariffValue]);
+      summaryRows.push(['Сумма со скидкой:', tariffValue]);
+      summaryRows.push(['Сумма с налогом УСН:', tariffValue / 0.94]);
+      summaryRows.push(['Сумма с налогом НДС 5%:', (tariffValue / 0.94) * 1.05]);
+    } else if (tariff === 'Тарифный') {
+      summaryRows.push(['Сумма:', totalProjectSum]);
+      summaryRows.push(['Скидка по тарифу:', tariffValue]);
+      summaryRows.push(['Сумма с налогом УСН:', tariffValue]);
+      summaryRows.push(['Сумма с налогом НДС 5%:', tariffValue]);
+    } else if (tariff === 'Процентный') {
+      var discountedSum = totalProjectSum * (1 - (tariffValue / 100));
+      summaryRows.push(['Сумма:', totalProjectSum]);
+      summaryRows.push(['Скидка ' + tariffValue + '%:', discountedSum]);
+      summaryRows.push(['Сумма с налогом УСН:', discountedSum / 0.94]);
+      summaryRows.push(['Сумма с налогом НДС 5%:', (discountedSum / 0.94) * 1.05]);
+    } else {
+      summaryRows.push(['Сумма:', totalProjectSum]);
+      summaryRows.push(['Сумма с налогом УСН:', totalProjectSum / 0.94]);
+      summaryRows.push(['Сумма с налогом НДС 5%:', (totalProjectSum / 0.94) * 1.05]);
+    }
+
+    var summaryStart = START_ROW + rows.length + 1;
+    if (summaryRows.length) {
+      var values = [];
+      for (var s = 0; s < summaryRows.length; s++) {
+        var rowIdx = summaryStart + s;
+        var labelRange = sh.getRange(rowIdx, 3, 1, 5); // C:G
+        labelRange.breakApart();
+        labelRange.merge();
+        labelRange
+          .setValue(summaryRows[s][0])
+          .setFontFamily('Nunito')
+          .setFontSize(10)
+          .setFontWeight('bold')
+          .setHorizontalAlignment('right')
+          .setVerticalAlignment('middle');
+
+        values.push([summaryRows[s][1]]);
+      }
+
+      sh.getRange(summaryStart, 8, summaryRows.length, 1)
+        .setValues(values)
+        .setFontFamily('Nunito')
+        .setFontSize(10)
+        .setFontWeight('bold')
+        .setHorizontalAlignment('right')
+        .setVerticalAlignment('middle')
+        .setNumberFormat('#,##0.00');
+
+      sh.setRowHeights(summaryStart, summaryRows.length, 24);
     }
 
     sh.setFrozenRows(6);
@@ -616,11 +675,13 @@ function createProject(payload) {
 
     var client = String(payload && payload.client ? payload.client : '').trim();
     var tariff = String(payload && payload.tariff ? payload.tariff : '').trim();
+    var tariffValue = toNumber_(payload && payload.tariffValue, 0);
     if (!tariff) tariff = 'Обычный';
+    if (tariff === 'Обычный') tariffValue = 0;
 
     var list = loadProjects_();
     var id = Utilities.getUuid();
-    var p = { id: id, name: name, client: client, tariff: tariff, itemsCount: 0, totalSum: 0, updatedAt: new Date().toISOString() };
+    var p = { id: id, name: name, client: client, tariff: tariff, tariffValue: tariffValue, itemsCount: 0, totalSum: 0, updatedAt: new Date().toISOString() };
     list.push(p);
     saveProjects_(list);
     saveEntries_(id, []);
@@ -638,12 +699,14 @@ function importExistingProject(payload) {
 
     var name = String(payload && payload.name ? payload.name : '').trim();
     var tariff = String(payload && payload.tariff ? payload.tariff : '').trim();
+    var tariffValue = toNumber_(payload && payload.tariffValue, 0);
     var client = String(payload && payload.client ? payload.client : '').trim();
     var project = String(payload && payload.project ? payload.project : '').trim();
     var date = String(payload && payload.date ? payload.date : '').trim();
 
     if (!name) throw new Error('Укажите наименование проекта.');
     if (!tariff) tariff = 'Обычный';
+    if (tariff === 'Обычный') tariffValue = 0;
     if (!client || !project || !date) throw new Error('Не выбраны данные клиента для импорта.');
 
     var rows = readClientsDbRows_().filter(function(r) {
@@ -658,6 +721,7 @@ function importExistingProject(payload) {
       name: name,
       client: client,
       tariff: tariff,
+      tariffValue: tariffValue,
       itemsCount: 0,
       totalSum: 0,
       updatedAt: new Date().toISOString()
@@ -764,7 +828,7 @@ function duplicateProject(projectId) {
 
     var newId = Utilities.getUuid();
     var list = loadProjects_();
-    var p = { id: newId, name: String(src.name || '').trim() + ' (копия)', client: String(src.client || ''), tariff: String(src.tariff || 'Обычный'), itemsCount: 0, totalSum: 0, updatedAt: new Date().toISOString() };
+    var p = { id: newId, name: String(src.name || '').trim() + ' (копия)', client: String(src.client || ''), tariff: String(src.tariff || 'Обычный'), tariffValue: toNumber_(src.tariffValue, 0), itemsCount: 0, totalSum: 0, updatedAt: new Date().toISOString() };
     list.push(p);
     saveProjects_(list);
 
@@ -1286,7 +1350,14 @@ function loadProjects_() {
   if (!raw) return [];
   try {
     var parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    for (var i = 0; i < parsed.length; i++) {
+      if (!parsed[i] || typeof parsed[i] !== 'object') continue;
+      parsed[i].tariff = String(parsed[i].tariff || 'Обычный');
+      parsed[i].tariffValue = toNumber_(parsed[i].tariffValue, 0);
+      if (parsed[i].tariff === 'Обычный') parsed[i].tariffValue = 0;
+    }
+    return parsed;
   } catch (e) {
     return [];
   }
